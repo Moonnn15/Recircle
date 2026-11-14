@@ -1,0 +1,9 @@
+package com.recircle.repository;
+
+import com.recircle.entity.PasswordResetToken;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+    Optional<PasswordResetToken> findByResetTokenAndConsumedFalse(String resetToken);
+}

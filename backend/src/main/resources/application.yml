@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: recircle-backend
+  datasource:
+    url: jdbc:h2:file:./data/recircle_db;MODE=MySQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+recircle:
+  security:
+    jwt-secret: ${JWT_SECRET:ReCircleCampusTrustSharingSecretKey2026SRMInstituteOfScienceAndTech!}
+    jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  campus:
+    allowed-domains: ${CAMPUS_ALLOWED_DOMAINS:srmist.edu.in,campus.edu,edu.in}
+  storage:
+    upload-dir: ${UPLOAD_DIR:./uploads}
