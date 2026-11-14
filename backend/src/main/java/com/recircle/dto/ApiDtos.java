@@ -86,6 +86,12 @@ public class ApiDtos {
         boolean active
     ) {}
 
+    public record CategoryUpsertRequest(
+        String name,
+        String description,
+        String iconName
+    ) {}
+
     public record ItemUpsertRequest(
         String title,
         String description,
@@ -204,6 +210,27 @@ public class ApiDtos {
         String startDate,
         String endDate,
         boolean simulateImmediatePayment
+    ) {}
+
+    public record RentalCalculateRequest(
+        Long itemId,
+        String startDate,
+        String endDate
+    ) {}
+
+    public record RentalCalculationDto(
+        Long itemId,
+        String itemTitle,
+        String startDate,
+        String endDate,
+        Integer rentalDays,
+        BigDecimal dailyRate,
+        BigDecimal totalRentalAmount,
+        BigDecimal securityDeposit,
+        BigDecimal totalPayableWithDeposit,
+        boolean availableForDates,
+        String paymentStatusMode,
+        String paymentDisclaimer
     ) {}
 
     public record RentalDto(
@@ -355,8 +382,13 @@ public class ApiDtos {
 
     public record DisputeResolveRequest(
         String status,
-        String resolutionNotes
-    ) {}
+        String resolutionNotes,
+        Boolean penalizeReportedUser
+    ) {
+        public DisputeResolveRequest(String status, String resolutionNotes) {
+            this(status, resolutionNotes, false);
+        }
+    }
 
     public record DisputeDto(
         Long id,

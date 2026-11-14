@@ -1062,3 +1062,162 @@ export const ModeratorDashboardPage: React.FC = () => {
     </div>
   );
 };
+
+export const AdminAuditLogsPage: React.FC = () => {
+  const [logs, setLogs] = useState<AuditLogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState('ALL');
+
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    apiClient
+      .get<AuditLogItem[]>('/admin/audit-logs')
+      .then((res) => setLogs(res.data))
+      .catch((err) => setError(err.response?.data?.message || 'Unable to load audit logs.'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filteredLogs = logs.filter((log) => {
+    const matchesSearch =
+      search === '' ||
+      (log.actorName && log.actorName.toLowerCase().includes(search.toLowerCase())) ||
+      (log.actionType && log.actionType.toLowerCase().includes(search.toLowerCase())) ||
+      (log.targetEntity && log.targetEntity.toLowerCase().includes(search.toLowerCase())) ||
+      (log.details && log.details.toLowerCase().includes(search.toLowerCase()));
+
+    const matchesAction =
+      actionFilter === 'ALL' ||
+      (log.actionType && log.actionType.toUpperCase().includes(actionFilter));
+
+    return matchesSearch && matchesAction;
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-[#164B3B] text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="inline-block px-3 py-1 rounded-full bg-[#238B68] text-xs font-semibold uppercase tracking-wider mb-2">
+            Governance & Security
+          </span>
+          <h1 className="text-2xl font-bold">Immutable System Audit Trail</h1>
+          <p className="text-emerald-100 text-sm mt-1">
+            Complete tamper-evident log of administrative decisions, account moderation, and dispute resolutions.
+          </p>
+        </div>
+        <button
+          onClick={load}
+          className="px-4 py-2 bg-[#238B68] hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold flex items-center gap-2 cursor-pointer self-start md:self-auto"
+        >
+          <Activity className="w-4 h-4" /> Refresh Logs
+        </button>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-[#A8C3A0]/40 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full md:w-96">
+          <input
+            type="text"
+            placeholder="Search by actor, action, entity, or details..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#A8C3A0]/60 text-sm focus:outline-none focus:ring-2 focus:ring-[#238B68]"
+          />
+          <Search className="w-4 h-4 text-[#737B75] absolute left-3 top-3.5" />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <span className="text-xs font-semibold text-[#737B75]">Filter Action:</span>
+          <select
+            value={actionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-[#A8C3A0]/60 text-xs font-semibold text-[#164B3B] focus:outline-none focus:ring-2 focus:ring-[#238B68]"
+          >
+            <option value="ALL">All Actions ({logs.length})</option>
+            <option value="DISPUTE">Dispute Moderation</option>
+            <option value="STATUS">User Status Changes</option>
+            <option value="ITEM">Item Listing Actions</option>
+            <option value="AUTH">Authentication Events</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Logs Table / List */}
+      {loading ? (
+        <div className="p-12 text-center text-sm text-[#737B75] bg-white rounded-2xl border border-[#A8C3A0]/40 animate-pulse">
+          Loading immutable audit trail from MySQL 9.5...
+        </div>
+      ) : error ? (
+        <div className="p-6 rounded-2xl bg-[#FDECEA] border border-[#C62828]/30 flex items-center justify-between">
+          <p className="text-sm font-semibold text-[#C62828]">{error}</p>
+          <button
+            onClick={load}
+            className="px-3 py-1.5 rounded-xl bg-[#C62828] text-white text-xs font-semibold cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      ) : filteredLogs.length === 0 ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-[#A8C3A0] space-y-2">
+          <p className="font-bold text-base text-[#164B3B]">No Audit Records Found</p>
+          <p className="text-xs text-[#737B75]">
+            No administrative events match your search criteria.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-[#A8C3A0]/40 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#E8F2EA] text-[#164B3B] uppercase font-bold border-b border-[#A8C3A0]/40">
+                <tr>
+                  <th className="p-3.5">Log ID & Time</th>
+                  <th className="p-3.5">Actor</th>
+                  <th className="p-3.5">Role</th>
+                  <th className="p-3.5">Action Type</th>
+                  <th className="p-3.5">Target Entity</th>
+                  <th className="p-3.5">Audit Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#A8C3A0]/20 font-medium">
+                {filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#E8F2EA]/40 transition-colors">
+                    <td className="p-3.5 whitespace-nowrap text-[#737B75]">
+                      <div className="font-mono font-bold text-[#164B3B]">#{log.id}</div>
+                      <div>{log.createdAt ? log.createdAt.replace('T', ' ').slice(0, 19) : '—'}</div>
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <div className="font-bold text-[#202923]">{log.actorName || 'System'}</div>
+                      <div className="text-[11px] text-[#737B75]">{log.actorEmail || 'system@recircle'}</div>
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#164B3B] text-white">
+                        {log.actorRole || 'SYSTEM'}
+                      </span>
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap font-mono font-bold text-[#238B68]">
+                      {log.actionType}
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded bg-[#E8F2EA] text-[#164B3B] font-semibold">
+                        {log.targetEntity || 'SYSTEM'} {log.targetId ? `#${log.targetId}` : ''}
+                      </span>
+                    </td>
+                    <td className="p-3.5 max-w-md text-[#202923]">
+                      <p className="line-clamp-2">{log.details}</p>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

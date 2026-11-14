@@ -48,6 +48,9 @@ public class Dispute {
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
 
+    @Column(name = "penalty_applied", nullable = false)
+    private boolean penaltyApplied = false;
+
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
@@ -84,6 +87,8 @@ public class Dispute {
     public void setAssignedModerator(User assignedModerator) { this.assignedModerator = assignedModerator; }
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
+    public boolean isPenaltyApplied() { return penaltyApplied; }
+    public void setPenaltyApplied(boolean penaltyApplied) { this.penaltyApplied = penaltyApplied; }
     public Instant getResolvedAt() { return resolvedAt; }
     public void setResolvedAt(Instant resolvedAt) { this.resolvedAt = resolvedAt; }
     public Instant getCreatedAt() { return createdAt; }

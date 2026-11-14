@@ -331,11 +331,22 @@ export const ReviewsPage: React.FC = () => {
 export const NotificationsPage: React.FC = () => {
   const { refreshUserProfile, showToast } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
 
   const load = () => {
+    setLoading(true);
+    setError(null);
     apiClient
-      .get<{ notifications: NotificationItem[] }>('/notifications')
-      .then((res) => setNotifications(res.data.notifications));
+      .get<{ unreadCount: number; notifications: NotificationItem[] }>('/notifications')
+      .then((res) => {
+        setNotifications(res.data.notifications || []);
+        setUnreadCount(res.data.unreadCount ?? 0);
+      })
+      .catch((err) => setError(err.response?.data?.message || 'Unable to load notifications.'))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -343,75 +354,137 @@ export const NotificationsPage: React.FC = () => {
   }, []);
 
   const markRead = async (id: number) => {
-    await apiClient.put(`/notifications/${id}/read`);
-    load();
-    refreshUserProfile();
+    try {
+      await apiClient.put(`/notifications/${id}/read`);
+      load();
+      refreshUserProfile();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to mark notification as read.', 'error');
+    }
   };
 
   const markAllRead = async () => {
-    await apiClient.put('/notifications/read-all');
-    showToast('All notifications marked as read.', 'info');
-    load();
-    refreshUserProfile();
+    try {
+      await apiClient.put('/notifications/read-all');
+      showToast('All notifications marked as read.', 'info');
+      load();
+      refreshUserProfile();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to mark all notifications as read.', 'error');
+    }
   };
+
+  const filtered = notifications.filter((n) => (filter === 'UNREAD' ? !n.read : true));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-[#164B3B]">
             In-App Notifications Center
           </h1>
           <p className="text-xs text-[#737B75]">
-            Real-time alerts for borrow approvals, handover confirmations, return reminders, and reviews
+            Real-time alerts for borrow approvals, handover confirmations, return reminders, exchanges, rentals, and donations
           </p>
         </div>
-        <button
-          onClick={markAllRead}
-          className="px-4 py-2 rounded-xl bg-[#164B3B] text-white text-xs font-semibold cursor-pointer"
-        >
-          Mark All as Read
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="px-3 py-1.5 rounded-xl bg-[#E8F2EA] text-[#164B3B] text-xs font-bold">
+            {unreadCount} Unread
+          </span>
+          <button
+            onClick={markAllRead}
+            disabled={unreadCount === 0}
+            className="px-4 py-2 rounded-xl bg-[#164B3B] text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+          >
+            Mark All as Read
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {notifications.map((n) => (
-          <div
-            key={n.id}
-            className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
-              n.read ? 'bg-white border-[#A8C3A0]/40' : 'bg-[#E8F2EA] border-[#238B68]'
+      <div className="flex gap-2">
+        {(['ALL', 'UNREAD'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setFilter(tab)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer ${
+              filter === tab
+                ? 'bg-[#164B3B] text-white'
+                : 'bg-white border border-[#A8C3A0]/50 text-[#737B75]'
             }`}
           >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#164B3B] text-white">
-                  {n.notificationType}
-                </span>
-                <span className="font-display font-bold text-sm text-[#202923]">{n.title}</span>
-              </div>
-              <p className="text-xs text-[#737B75]">{n.message}</p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {n.targetPath && (
-                <Link
-                  to={n.targetPath}
-                  className="px-3 py-1.5 rounded-xl bg-white border border-[#A8C3A0] text-xs font-semibold text-[#164B3B]"
-                >
-                  Open
-                </Link>
-              )}
-              {!n.read && (
-                <button
-                  onClick={() => markRead(n.id)}
-                  className="px-3 py-1.5 rounded-xl bg-[#238B68] text-white text-xs font-semibold cursor-pointer"
-                >
-                  Mark Read
-                </button>
-              )}
-            </div>
-          </div>
+            {tab === 'ALL' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
+          </button>
         ))}
       </div>
+
+      {loading ? (
+        <div className="p-8 rounded-2xl bg-white border border-[#A8C3A0]/40 text-center text-sm text-[#737B75] animate-pulse">
+          Loading notifications...
+        </div>
+      ) : error ? (
+        <div className="p-6 rounded-2xl bg-[#FDECEA] border border-[#C62828]/30 flex items-center justify-between">
+          <p className="text-xs font-semibold text-[#C62828]">{error}</p>
+          <button
+            onClick={load}
+            className="px-3 py-1.5 rounded-xl bg-[#C62828] text-white text-xs font-semibold cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="p-10 rounded-2xl bg-white border border-dashed border-[#A8C3A0] text-center space-y-2">
+          <p className="font-display font-bold text-base text-[#164B3B]">No Notifications Found</p>
+          <p className="text-xs text-[#737B75]">
+            {filter === 'UNREAD'
+              ? 'You are all caught up! Switch to "All" to see past alerts.'
+              : 'Notifications for your borrowing, lending, exchange, rental, and donation workflows will appear here.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((n) => (
+            <div
+              key={n.id}
+              className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+                n.read ? 'bg-white border-[#A8C3A0]/40' : 'bg-[#E8F2EA] border-[#238B68]'
+              }`}
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#164B3B] text-white">
+                    {n.notificationType}
+                  </span>
+                  <span className="font-display font-bold text-sm text-[#202923]">{n.title}</span>
+                  {n.createdAt && (
+                    <span className="text-[11px] font-mono text-[#737B75]">
+                      • {n.createdAt.slice(0, 10)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#737B75]">{n.message}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {n.targetPath && (
+                  <Link
+                    to={n.targetPath}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-[#A8C3A0] text-xs font-semibold text-[#164B3B]"
+                  >
+                    Open
+                  </Link>
+                )}
+                {!n.read && (
+                  <button
+                    onClick={() => markRead(n.id)}
+                    className="px-3 py-1.5 rounded-xl bg-[#238B68] text-white text-xs font-semibold cursor-pointer"
+                  >
+                    Mark Read
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

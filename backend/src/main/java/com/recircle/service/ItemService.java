@@ -55,6 +55,23 @@ public class ItemService {
             .toList();
     }
 
+    @Transactional
+    public CategoryDto createCategory(CategoryUpsertRequest req) {
+        inputValidator.requireNonBlank(req.name(), "Category name is required.");
+        String cleanName = inputValidator.sanitizeText(req.name());
+        String slug = cleanName.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        if (categoryRepository.findBySlug(slug).isPresent()) {
+            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_CATEGORY", "A category with this name already exists.");
+        }
+        Category c = new Category();
+        c.setName(cleanName);
+        c.setSlug(slug);
+        c.setDescription(req.description() != null ? inputValidator.sanitizeText(req.description()) : "Campus resource category");
+        c.setIconName(req.iconName() != null && !req.iconName().isBlank() ? req.iconName().trim() : "Package");
+        c.setActive(true);
+        return dtoMapper.toCategoryDto(categoryRepository.save(c));
+    }
+
     @Transactional(readOnly = true)
     public Map<String, Object> searchAndFilterItems(
         String query,

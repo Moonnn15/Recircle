@@ -318,6 +318,9 @@ export const ItemDetailsPage: React.FC = () => {
   const [item, setItem] = useState<ItemListing | null>(null);
   const [relatedItems, setRelatedItems] = useState<ItemListing[]>([]);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [reservedDateRanges, setReservedDateRanges] = useState<
+    Array<{ bookingId: number; type: string; status: string; startDate: string; endDate: string }>
+  >([]);
   const [myItems, setMyItems] = useState<ItemListing[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -329,7 +332,17 @@ export const ItemDetailsPage: React.FC = () => {
   const [endDate, setEndDate] = useState(fourDaysLaterStr);
   const [purpose, setPurpose] = useState('');
   const [offeredItemId, setOfferedItemId] = useState<string>('');
+  const [simulatePayment, setSimulatePayment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [datesAvailable, setDatesAvailable] = useState<boolean>(true);
+  const [dateValidationMsg, setDateValidationMsg] = useState<string | null>(null);
+  const [backendQuote, setBackendQuote] = useState<{
+    rentalDays: number;
+    dailyRate: number;
+    totalRentalAmount: number;
+    securityDeposit: number;
+    availableForDates: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -339,6 +352,13 @@ export const ItemDetailsPage: React.FC = () => {
         item: ItemListing;
         relatedItems: ItemListing[];
         reviews: ReviewItem[];
+        reservedDateRanges?: Array<{
+          bookingId: number;
+          type: string;
+          status: string;
+          startDate: string;
+          endDate: string;
+        }>;
       }>(`/items/${id}`),
       user ? apiClient.get<ItemListing[]>('/items/my-listings') : Promise.resolve({ data: [] }),
     ])
@@ -346,6 +366,7 @@ export const ItemDetailsPage: React.FC = () => {
         setItem(detailRes.data.item);
         setRelatedItems(detailRes.data.relatedItems || []);
         setReviews(detailRes.data.reviews || []);
+        setReservedDateRanges(detailRes.data.reservedDateRanges || []);
         setMyItems(myRes.data || []);
         if (myRes.data && myRes.data.length > 0) {
           setOfferedItemId(String(myRes.data[0].id));
@@ -354,16 +375,67 @@ export const ItemDetailsPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id, user]);
 
+  useEffect(() => {
+    if (!item || !startDate || !endDate) return;
+    if (new Date(endDate) < new Date(startDate)) {
+      setDatesAvailable(false);
+      setDateValidationMsg('End date cannot be earlier than start date.');
+      return;
+    }
+    const requestedBorrowDays =
+      Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
+    if (item.sharingType === 'BORROW' && requestedBorrowDays > item.maxBorrowDays) {
+      setDatesAvailable(false);
+      setDateValidationMsg(
+        `Selected range (${requestedBorrowDays} days) exceeds owner's maximum limit of ${item.maxBorrowDays} days.`
+      );
+      return;
+    }
+
+    if (item.sharingType === 'BORROW' || item.sharingType === 'RENT') {
+      apiClient
+        .get<{ availableForRequestedDates: boolean }>(`/items/${item.id}/availability`, {
+          params: { startDate, endDate },
+        })
+        .then((res) => {
+          setDatesAvailable(res.data.availableForRequestedDates);
+          setDateValidationMsg(
+            res.data.availableForRequestedDates
+              ? null
+              : 'This item already has an approved or active reservation overlapping the selected dates.'
+          );
+        })
+        .catch(() => {
+          setDatesAvailable(true);
+          setDateValidationMsg(null);
+        });
+    }
+
+    if (item.sharingType === 'RENT') {
+      apiClient
+        .post<{
+          rentalDays: number;
+          dailyRate: number;
+          totalRentalAmount: number;
+          securityDeposit: number;
+          availableForDates: boolean;
+        }>('/rentals/calculate', { itemId: item.id, startDate, endDate })
+        .then((res) => setBackendQuote(res.data))
+        .catch(() => setBackendQuote(null));
+    }
+  }, [item, startDate, endDate]);
+
   if (loading || !item) {
     return <div className="h-96 bg-white rounded-3xl animate-pulse border border-[#A8C3A0]/40" />;
   }
 
   const isOwner = user?.id === item.ownerId;
-  const diffDays = Math.max(
-    1,
-    Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000)
-  );
-  const estimatedRentalCost = diffDays * Number(item.rentalPricePerDay || 50);
+  const diffDays = backendQuote
+    ? backendQuote.rentalDays
+    : Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
+  const estimatedRentalCost = backendQuote
+    ? Number(backendQuote.totalRentalAmount)
+    : diffDays * Number(item.rentalPricePerDay || 50);
 
   const handleBorrowSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -392,9 +464,14 @@ export const ItemDetailsPage: React.FC = () => {
         itemId: item.id,
         startDate,
         endDate,
-        simulateImmediatePayment: true,
+        simulateImmediatePayment: simulatePayment,
       });
-      showToast(`Rental request submitted! Simulated total: ₹${estimatedRentalCost}`, 'success');
+      showToast(
+        simulatePayment
+          ? `Rental request submitted! Simulated demo total: ₹${estimatedRentalCost}`
+          : `Rental request submitted (Payment Status: PENDING). Total: ₹${estimatedRentalCost}`,
+        'success'
+      );
       navigate('/rentals');
     } catch (err) {
       showToast(extractErrorMessage(err), 'error');
@@ -548,6 +625,23 @@ export const ItemDetailsPage: React.FC = () => {
 
           {/* Interactive Action Panel */}
           <div className="bg-white rounded-3xl p-6 border border-[#A8C3A0]/50 shadow-sm space-y-4">
+            {reservedDateRanges.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-[#F8F7F0] border border-[#A8C3A0] text-xs space-y-1.5">
+                <span className="font-bold text-[#164B3B] block">
+                  Reserved Date Windows (Non-Overlapping Dates Remain Available):
+                </span>
+                {reservedDateRanges.map((r) => (
+                  <div key={`${r.type}-${r.bookingId}`} className="flex items-center justify-between text-[#202923]">
+                    <span>
+                      {r.startDate} → {r.endDate}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#E8F2EA] text-[#164B3B] font-semibold text-[10px]">
+                      {r.type} ({r.status})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {isOwner ? (
               <div className="space-y-3">
                 <h3 className="font-display font-bold text-lg text-[#164B3B]">
@@ -615,10 +709,15 @@ export const ItemDetailsPage: React.FC = () => {
                     className="w-full px-3 py-2 rounded-xl border border-[#A8C3A0] text-xs"
                   />
                 </div>
+                {dateValidationMsg && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-300 text-xs text-red-800 font-semibold">
+                    {dateValidationMsg}
+                  </div>
+                )}
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 rounded-xl bg-[#164B3B] hover:bg-[#238B68] text-white font-semibold text-xs cursor-pointer"
+                  disabled={submitting || !datesAvailable}
+                  className="w-full py-3 rounded-xl bg-[#164B3B] hover:bg-[#238B68] disabled:opacity-50 text-white font-semibold text-xs cursor-pointer"
                 >
                   {submitting ? 'Submitting Request...' : 'Submit Borrow Request'}
                 </button>
@@ -658,6 +757,12 @@ export const ItemDetailsPage: React.FC = () => {
                   </div>
                 </div>
 
+                {dateValidationMsg && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-300 text-xs text-red-800 font-semibold">
+                    {dateValidationMsg}
+                  </div>
+                )}
+
                 {/* Live Rental Cost Breakdown */}
                 <div className="p-3.5 rounded-2xl bg-[#E8F2EA] border border-[#A8C3A0] space-y-1.5 text-xs">
                   <div className="flex justify-between">
@@ -667,22 +772,30 @@ export const ItemDetailsPage: React.FC = () => {
                     <span className="font-bold">₹{estimatedRentalCost}</span>
                   </div>
                   <div className="flex justify-between text-[#737B75]">
-                    <span>Refundable Security Deposit</span>
+                    <span>Specified Security Deposit</span>
                     <span>₹{Number(item.securityDeposit).toFixed(0)}</span>
                   </div>
                   <div className="pt-1.5 border-t border-[#A8C3A0] flex justify-between font-bold text-[#164B3B]">
                     <span>Total Rental Amount (Backend Verified)</span>
                     <span>₹{estimatedRentalCost}</span>
                   </div>
-                  <p className="text-[10px] text-[#238B68] font-medium pt-1">
-                    * Payment Simulation Mode: Recorded as PAID_SIMULATED (No real money charged)
-                  </p>
+                  <label className="flex items-center gap-2 pt-2 cursor-pointer text-[11px] text-[#202923]">
+                    <input
+                      type="checkbox"
+                      checked={simulatePayment}
+                      onChange={(e) => setSimulatePayment(e.target.checked)}
+                      className="rounded border-[#A8C3A0]"
+                    />
+                    <span>
+                      Simulate Demo Payment (PAID_SIMULATED — otherwise recorded as PENDING / Gateway Not Integrated)
+                    </span>
+                  </label>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 rounded-xl bg-[#164B3B] hover:bg-[#238B68] text-white font-semibold text-xs cursor-pointer"
+                  disabled={submitting || !datesAvailable}
+                  className="w-full py-3 rounded-xl bg-[#164B3B] hover:bg-[#238B68] disabled:opacity-50 text-white font-semibold text-xs cursor-pointer"
                 >
                   {submitting ? 'Processing Rental...' : `Confirm Rental Request (₹${estimatedRentalCost})`}
                 </button>

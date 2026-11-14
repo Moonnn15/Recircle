@@ -13,7 +13,6 @@ USE recircle_db;
 
 -- ----------------------------------------------------------------------------
 -- 1. USERS TABLE
--- Stores core authentication credentials, role, campus verification, and status
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -31,14 +30,12 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT uq_users_email UNIQUE (email),
     CONSTRAINT uq_users_reg_number UNIQUE (registration_number),
     CONSTRAINT chk_users_role CHECK (role IN ('STUDENT', 'MODERATOR', 'ADMIN')),
-    CONSTRAINT chk_users_status CHECK (account_status IN ('ACTIVE', 'SUSPENDED', 'PENDING_VERIFICATION', 'DEACTIVATED'))
+    CONSTRAINT chk_users_status CHECK (account_status IN ('ACTIVE', 'SUSPENDED', 'PENDING_VERIFICATION', 'DEACTIVATED')),
+    INDEX idx_users_role_status (role, account_status)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_users_role_status ON users(role, account_status);
 
 -- ----------------------------------------------------------------------------
 -- 2. USER_PROFILES TABLE
--- Stores academic & campus profile details (1:1 relationship with users)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS user_profiles (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -55,14 +52,12 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT uq_user_profiles_user UNIQUE (user_id),
     CONSTRAINT fk_user_profiles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT chk_profile_year CHECK (year_of_study BETWEEN 1 AND 6)
+    CONSTRAINT chk_profile_year CHECK (year_of_study BETWEEN 1 AND 6),
+    INDEX idx_user_profiles_dept (department)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_user_profiles_dept ON user_profiles(department);
 
 -- ----------------------------------------------------------------------------
 -- 3. CATEGORIES TABLE
--- Stores the 10 campus resource categories and administrative configuration
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS categories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -78,8 +73,6 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- ----------------------------------------------------------------------------
 -- 4. ITEMS TABLE
--- Stores campus resource listings (Borrow, Rent, Exchange, Donate)
--- Includes optimistic locking version column to prevent concurrent race bookings
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -110,16 +103,14 @@ CREATE TABLE IF NOT EXISTS items (
     CONSTRAINT chk_items_condition CHECK (item_condition IN ('NEW', 'LIKE_NEW', 'GOOD', 'FAIR')),
     CONSTRAINT chk_items_sharing CHECK (sharing_type IN ('BORROW', 'RENT', 'EXCHANGE', 'DONATE')),
     CONSTRAINT chk_items_status CHECK (availability_status IN ('AVAILABLE', 'RESERVED', 'UNAVAILABLE', 'PENDING_APPROVAL', 'COMPLETED', 'ARCHIVED')),
-    CONSTRAINT chk_items_prices CHECK (security_deposit >= 0 AND rental_price_per_day >= 0)
+    CONSTRAINT chk_items_prices CHECK (security_deposit >= 0 AND rental_price_per_day >= 0),
+    INDEX idx_items_discovery (archived, availability_status, sharing_type, category_id),
+    INDEX idx_items_owner (owner_id),
+    INDEX idx_items_created (created_at DESC)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_items_discovery ON items(archived, availability_status, sharing_type, category_id);
-CREATE INDEX idx_items_owner ON items(owner_id);
-CREATE INDEX idx_items_created ON items(created_at DESC);
 
 -- ----------------------------------------------------------------------------
 -- 5. ITEM_IMAGES TABLE
--- Stores gallery photographs associated with each item listing
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS item_images (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -128,14 +119,12 @@ CREATE TABLE IF NOT EXISTS item_images (
     caption VARCHAR(160) NULL,
     display_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_item_images_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+    CONSTRAINT fk_item_images_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+    INDEX idx_item_images_item (item_id, display_order)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_item_images_item ON item_images(item_id, display_order);
 
 -- ----------------------------------------------------------------------------
 -- 6. BORROW_REQUESTS TABLE
--- Manages borrowing and lending lifecycle with handover and return tracking
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS borrow_requests (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -151,22 +140,21 @@ CREATE TABLE IF NOT EXISTS borrow_requests (
     return_requested_at TIMESTAMP NULL,
     returned_at TIMESTAMP NULL,
     returned_on_time BOOLEAN NULL,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_borrow_item FOREIGN KEY (item_id) REFERENCES items(id),
     CONSTRAINT fk_borrow_borrower FOREIGN KEY (borrower_id) REFERENCES users(id),
     CONSTRAINT fk_borrow_lender FOREIGN KEY (lender_id) REFERENCES users(id),
     CONSTRAINT chk_borrow_dates CHECK (end_date >= start_date),
-    CONSTRAINT chk_borrow_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'ACTIVE', 'RETURN_REQUESTED', 'COMPLETED', 'OVERDUE', 'DISPUTED'))
+    CONSTRAINT chk_borrow_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'ACTIVE', 'RETURN_REQUESTED', 'COMPLETED', 'OVERDUE', 'DISPUTED')),
+    INDEX idx_borrow_item_dates (item_id, status, start_date, end_date),
+    INDEX idx_borrow_borrower (borrower_id, status),
+    INDEX idx_borrow_lender (lender_id, status)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_borrow_item_dates ON borrow_requests(item_id, status, start_date, end_date);
-CREATE INDEX idx_borrow_borrower ON borrow_requests(borrower_id, status);
-CREATE INDEX idx_borrow_lender ON borrow_requests(lender_id, status);
 
 -- ----------------------------------------------------------------------------
 -- 7. EXCHANGE_OFFERS TABLE
--- Manages peer-to-peer item exchange proposals and dual handover confirmation
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS exchange_offers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -179,21 +167,20 @@ CREATE TABLE IF NOT EXISTS exchange_offers (
     proposer_handover_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
     receiver_handover_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
     completed_at TIMESTAMP NULL,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_exchange_req_item FOREIGN KEY (requested_item_id) REFERENCES items(id),
     CONSTRAINT fk_exchange_off_item FOREIGN KEY (offered_item_id) REFERENCES items(id),
     CONSTRAINT fk_exchange_proposer FOREIGN KEY (proposer_id) REFERENCES users(id),
     CONSTRAINT fk_exchange_receiver FOREIGN KEY (receiver_id) REFERENCES users(id),
-    CONSTRAINT chk_exchange_status CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'HANDOVER_PENDING', 'COMPLETED', 'DISPUTED'))
+    CONSTRAINT chk_exchange_status CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'HANDOVER_PENDING', 'COMPLETED', 'DISPUTED')),
+    INDEX idx_exchange_items (requested_item_id, offered_item_id, status),
+    INDEX idx_exchange_users (proposer_id, receiver_id)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_exchange_items ON exchange_offers(requested_item_id, offered_item_id, status);
-CREATE INDEX idx_exchange_users ON exchange_offers(proposer_id, receiver_id);
 
 -- ----------------------------------------------------------------------------
 -- 8. RENTALS TABLE
--- Manages paid campus rentals with backend cost calculation & simulated payment
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS rentals (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -211,22 +198,21 @@ CREATE TABLE IF NOT EXISTS rentals (
     handover_confirmed_at TIMESTAMP NULL,
     returned_at TIMESTAMP NULL,
     returned_on_time BOOLEAN NULL,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_rentals_item FOREIGN KEY (item_id) REFERENCES items(id),
     CONSTRAINT fk_rentals_renter FOREIGN KEY (renter_id) REFERENCES users(id),
     CONSTRAINT fk_rentals_owner FOREIGN KEY (owner_id) REFERENCES users(id),
     CONSTRAINT chk_rentals_dates CHECK (end_date >= start_date AND rental_days >= 1),
-    CONSTRAINT chk_rentals_payment CHECK (payment_status IN ('NOT_REQUIRED', 'PENDING', 'PAID_SIMULATED', 'REFUNDED_SIMULATED', 'FAILED')),
-    CONSTRAINT chk_rentals_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'ACTIVE', 'COMPLETED', 'OVERDUE', 'DISPUTED'))
+    CONSTRAINT chk_rentals_payment CHECK (payment_status IN ('NOT_REQUIRED', 'NOT_INTEGRATED', 'PENDING', 'PAID_SIMULATED', 'REFUNDED_SIMULATED', 'FAILED')),
+    CONSTRAINT chk_rentals_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'ACTIVE', 'COMPLETED', 'OVERDUE', 'DISPUTED')),
+    INDEX idx_rentals_item_dates (item_id, status, start_date, end_date),
+    INDEX idx_rentals_users (renter_id, owner_id)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_rentals_item_dates ON rentals(item_id, status, start_date, end_date);
-CREATE INDEX idx_rentals_users ON rentals(renter_id, owner_id);
 
 -- ----------------------------------------------------------------------------
 -- 9. DONATION_REQUESTS TABLE
--- Manages zero-cost student donations and recipient selection
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS donation_requests (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -237,19 +223,18 @@ CREATE TABLE IF NOT EXISTS donation_requests (
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
     handover_confirmed_at TIMESTAMP NULL,
     completed_at TIMESTAMP NULL,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_donation_item FOREIGN KEY (item_id) REFERENCES items(id),
     CONSTRAINT fk_donation_requester FOREIGN KEY (requester_id) REFERENCES users(id),
     CONSTRAINT fk_donation_donor FOREIGN KEY (donor_id) REFERENCES users(id),
-    CONSTRAINT chk_donation_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'))
+    CONSTRAINT chk_donation_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED')),
+    INDEX idx_donation_item (item_id, status)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_donation_item ON donation_requests(item_id, status);
 
 -- ----------------------------------------------------------------------------
 -- 10. TRANSACTIONS TABLE
--- Immutable unified ledger tracking all resource-sharing workflows across campus
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -272,18 +257,16 @@ CREATE TABLE IF NOT EXISTS transactions (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT uq_transactions_code UNIQUE (transaction_code),
     CONSTRAINT fk_tx_primary_item FOREIGN KEY (primary_item_id) REFERENCES items(id),
+    CONSTRAINT fk_tx_secondary_item FOREIGN KEY (secondary_item_id) REFERENCES items(id),
     CONSTRAINT fk_tx_initiator FOREIGN KEY (initiator_user_id) REFERENCES users(id),
     CONSTRAINT fk_tx_counterparty FOREIGN KEY (counterparty_user_id) REFERENCES users(id),
-    CONSTRAINT chk_tx_type CHECK (transaction_type IN ('BORROW', 'RENT', 'EXCHANGE', 'DONATE'))
+    CONSTRAINT chk_tx_type CHECK (transaction_type IN ('BORROW', 'RENT', 'EXCHANGE', 'DONATE')),
+    INDEX idx_tx_users (initiator_user_id, counterparty_user_id, status),
+    INDEX idx_tx_type_status (transaction_type, status, created_at)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_tx_users ON transactions(initiator_user_id, counterparty_user_id, status);
-CREATE INDEX idx_tx_type_status ON transactions(transaction_type, status, created_at);
 
 -- ----------------------------------------------------------------------------
 -- 11. REVIEWS TABLE
--- Stores verified post-transaction 5-star ratings and written feedback
--- Unique constraint prevents duplicate reviews per transaction and reviewer
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS reviews (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -302,14 +285,11 @@ CREATE TABLE IF NOT EXISTS reviews (
     CONSTRAINT fk_reviews_reviewer FOREIGN KEY (reviewer_id) REFERENCES users(id),
     CONSTRAINT fk_reviews_reviewee FOREIGN KEY (reviewee_id) REFERENCES users(id),
     CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5),
-    CONSTRAINT chk_reviews_not_self CHECK (reviewer_id <> reviewee_id)
+    INDEX idx_reviews_reviewee (reviewee_id, created_at DESC)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_reviews_reviewee ON reviews(reviewee_id, created_at DESC);
 
 -- ----------------------------------------------------------------------------
 -- 12. TRUST_SCORES TABLE
--- Stores current normalized trust score (0-100) and 4 weighted components
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS trust_scores (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -334,7 +314,6 @@ CREATE TABLE IF NOT EXISTS trust_scores (
 
 -- ----------------------------------------------------------------------------
 -- 13. TRUST_SCORE_HISTORY TABLE
--- Stores transparent audit trail of every trust score recalculation event
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS trust_score_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -345,14 +324,12 @@ CREATE TABLE IF NOT EXISTS trust_score_history (
     trigger_event VARCHAR(80) NOT NULL,
     reason_summary VARCHAR(300) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_trust_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_trust_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_trust_history_user (user_id, created_at DESC)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_trust_history_user ON trust_score_history(user_id, created_at DESC);
 
 -- ----------------------------------------------------------------------------
 -- 14. NOTIFICATIONS TABLE
--- Database-backed in-app notifications with deep links and read status
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS notifications (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -364,14 +341,12 @@ CREATE TABLE IF NOT EXISTS notifications (
     related_entity_id BIGINT NULL,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_notifications_user_read (user_id, is_read, created_at DESC)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read, created_at DESC);
 
 -- ----------------------------------------------------------------------------
 -- 15. DISPUTES TABLE
--- Tracks transaction disputes, moderation status, and resolution decisions
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS disputes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -385,20 +360,21 @@ CREATE TABLE IF NOT EXISTS disputes (
     status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
     assigned_moderator_id BIGINT NULL,
     resolution_notes TEXT NULL,
+    penalty_applied BOOLEAN NOT NULL DEFAULT FALSE,
     resolved_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_disputes_tx FOREIGN KEY (transaction_id) REFERENCES transactions(id),
+    CONSTRAINT fk_disputes_item FOREIGN KEY (item_id) REFERENCES items(id),
     CONSTRAINT fk_disputes_reporter FOREIGN KEY (reporter_id) REFERENCES users(id),
     CONSTRAINT fk_disputes_reported FOREIGN KEY (reported_user_id) REFERENCES users(id),
-    CONSTRAINT chk_disputes_status CHECK (status IN ('OPEN', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED', 'ESCALATED'))
+    CONSTRAINT fk_disputes_moderator FOREIGN KEY (assigned_moderator_id) REFERENCES users(id),
+    CONSTRAINT chk_disputes_status CHECK (status IN ('OPEN', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED', 'ESCALATED')),
+    INDEX idx_disputes_status (status, created_at DESC)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_disputes_status ON disputes(status, created_at DESC);
 
 -- ----------------------------------------------------------------------------
 -- 16. DISPUTE_EVIDENCE TABLE
--- Stores evidence attachments and investigation comments on disputes
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dispute_evidence (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -414,7 +390,6 @@ CREATE TABLE IF NOT EXISTS dispute_evidence (
 
 -- ----------------------------------------------------------------------------
 -- 17. REPORTS TABLE
--- Stores flagged listings, reviews, or suspicious account reports
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS reports (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -432,7 +407,6 @@ CREATE TABLE IF NOT EXISTS reports (
 
 -- ----------------------------------------------------------------------------
 -- 18. AUDIT_LOGS TABLE
--- Immutable audit log of administrative and moderator actions
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -444,14 +418,12 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     details VARCHAR(600) NOT NULL,
     ip_address VARCHAR(60) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_audit_actor FOREIGN KEY (actor_user_id) REFERENCES users(id)
+    CONSTRAINT fk_audit_actor FOREIGN KEY (actor_user_id) REFERENCES users(id),
+    INDEX idx_audit_created (created_at DESC)
 ) ENGINE=InnoDB;
-
-CREATE INDEX idx_audit_created ON audit_logs(created_at DESC);
 
 -- ----------------------------------------------------------------------------
 -- 19. REFRESH_TOKENS TABLE
--- Manages revocable JWT refresh tokens
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -466,7 +438,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 -- ----------------------------------------------------------------------------
 -- 20. EMAIL_VERIFICATION_TOKENS TABLE
--- Stores OTP codes / verification tokens for campus email verification
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -476,12 +447,12 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
     expires_at TIMESTAMP NOT NULL,
     consumed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_email_verify_token UNIQUE (verification_token),
     CONSTRAINT fk_email_verify_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ----------------------------------------------------------------------------
 -- 21. PASSWORD_RESET_TOKENS TABLE
--- Stores time-bound tokens for secure password recovery
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

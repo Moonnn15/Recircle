@@ -44,6 +44,10 @@ public class ExchangeOffer {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -75,6 +79,8 @@ public class ExchangeOffer {
     public void setReceiverHandoverConfirmed(boolean receiverHandoverConfirmed) { this.receiverHandoverConfirmed = receiverHandoverConfirmed; }
     public Instant getCompletedAt() { return completedAt; }
     public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

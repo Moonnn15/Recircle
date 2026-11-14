@@ -3,6 +3,7 @@ package com.recircle.service;
 import com.recircle.dto.ApiDtos.TrustHistoryDto;
 import com.recircle.dto.ApiDtos.TrustScoreDetailDto;
 import com.recircle.entity.*;
+import com.recircle.enums.DisputeStatus;
 import com.recircle.enums.TrustLevel;
 import com.recircle.exception.ApiException;
 import com.recircle.repository.*;
@@ -38,19 +39,22 @@ public class TrustScoreService {
     private final TrustScoreHistoryRepository trustScoreHistoryRepository;
     private final TransactionRecordRepository transactionRecordRepository;
     private final ReviewRepository reviewRepository;
+    private final DisputeRepository disputeRepository;
 
     public TrustScoreService(
         UserRepository userRepository,
         TrustScoreRepository trustScoreRepository,
         TrustScoreHistoryRepository trustScoreHistoryRepository,
         TransactionRecordRepository transactionRecordRepository,
-        ReviewRepository reviewRepository
+        ReviewRepository reviewRepository,
+        DisputeRepository disputeRepository
     ) {
         this.userRepository = userRepository;
         this.trustScoreRepository = trustScoreRepository;
         this.trustScoreHistoryRepository = trustScoreHistoryRepository;
         this.transactionRecordRepository = transactionRecordRepository;
         this.reviewRepository = reviewRepository;
+        this.disputeRepository = disputeRepository;
     }
 
     @Transactional
@@ -143,11 +147,17 @@ public class TrustScoreService {
             onTimeReturnScore = ((double) onTimeCount / (double) eligibleCount) * 100.0;
         }
 
-        // Weighted Sum: (Verified * 0.15) + (Completed * 0.35) + (Reviews * 0.30) + (OnTime * 0.20)
+        // Weighted Sum: (Verified * 0.15) + (Completed * 0.35) + (Reviews * 0.30) + (OnTime * 0.20) - DisputePenalty
+        long penalizedDisputeCount = disputeRepository.countByReportedUserIdAndStatusAndPenaltyAppliedTrue(
+            userId, DisputeStatus.RESOLVED
+        );
+        double disputePenalty = 15.0 * penalizedDisputeCount;
+
         double rawTotal = (verifiedScore * 0.15)
             + (completedTxScore * 0.35)
             + (userReviewScore * 0.30)
-            + (onTimeReturnScore * 0.20);
+            + (onTimeReturnScore * 0.20)
+            - disputePenalty;
         double boundedTotal = Math.min(100.0, Math.max(0.0, rawTotal));
 
         ts.setVerifiedAccountScore(bd(verifiedScore));

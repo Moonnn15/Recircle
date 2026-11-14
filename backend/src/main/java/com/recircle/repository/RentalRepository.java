@@ -28,4 +28,30 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
         @Param("activeStatuses") List<RentalStatus> activeStatuses,
         @Param("excludeId") Long excludeId
     );
+
+    @Query("""
+        SELECT r FROM Rental r
+        WHERE r.item.id = :itemId
+          AND r.status IN :activeStatuses
+        ORDER BY r.startDate ASC
+    """)
+    List<Rental> findActiveRentalsForItem(
+        @Param("itemId") Long itemId,
+        @Param("activeStatuses") List<RentalStatus> activeStatuses
+    );
+
+    @Query("""
+        SELECT r FROM Rental r
+        WHERE r.item.id = :itemId
+          AND r.status = com.recircle.enums.RentalStatus.PENDING
+          AND r.startDate <= :endDate
+          AND r.endDate >= :startDate
+          AND (:excludeId IS NULL OR r.id <> :excludeId)
+    """)
+    List<Rental> findOverlappingPendingRentals(
+        @Param("itemId") Long itemId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("excludeId") Long excludeId
+    );
 }

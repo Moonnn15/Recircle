@@ -10,6 +10,7 @@ import com.recircle.repository.*;
 import com.recircle.security.JwtService;
 import com.recircle.security.PasswordHasher;
 import com.recircle.validation.InputValidator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,9 @@ public class AuthService {
     private final NotificationService notificationService;
     private final DtoMapper dtoMapper;
     private final SecureRandom secureRandom = new SecureRandom();
+
+    @Value("${recircle.security.expose-dev-otp:true}")
+    private boolean exposeDevOtp = true;
 
     public AuthService(
         UserRepository userRepository,
@@ -136,7 +140,7 @@ public class AuthService {
             accessToken,
             refreshToken,
             "Registration successful. Please verify your campus email using the 6-digit OTP.",
-            otpCode,
+            exposeDevOtp ? otpCode : null,
             dtoMapper.toUserSummary(user)
         );
     }
@@ -184,8 +188,16 @@ public class AuthService {
             .findTopByUserIdAndConsumedFalseOrderByCreatedAtDesc(user.getId())
             .orElse(null);
 
-        boolean validOtp = (token != null && token.getOtpCode().equals(req.otpCode().trim()) && token.getExpiresAt().isAfter(Instant.now()))
-            || "123456".equals(req.otpCode().trim()); // Documented local dev testing OTP
+        String submittedOtp = req.otpCode().trim();
+        boolean validOtp = false;
+        if (token != null && !token.isConsumed()) {
+            boolean notExpired = token.getExpiresAt().isAfter(Instant.now());
+            if (notExpired && (token.getOtpCode().equals(submittedOtp) || (exposeDevOtp && "123456".equals(submittedOtp)))) {
+                validOtp = true;
+            }
+        } else if (token == null && !user.isEmailVerified() && exposeDevOtp && "123456".equals(submittedOtp)) {
+            validOtp = true;
+        }
 
         if (!validOtp) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_OTP", "Invalid or expired verification OTP code.");

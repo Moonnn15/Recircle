@@ -15,4 +15,17 @@ public interface DonationRequestRepository extends JpaRepository<DonationRequest
     List<DonationRequest> findByItemIdOrderByCreatedAtDesc(Long itemId);
 
     boolean existsByItemIdAndStatusIn(Long itemId, List<DonationStatus> statuses);
+
+    boolean existsByItemIdAndRequesterIdAndStatusIn(Long itemId, Long requesterId, List<DonationStatus> statuses);
+
+    @Query("""
+        SELECT d FROM DonationRequest d
+        WHERE d.item.id = :itemId
+          AND d.status = com.recircle.enums.DonationStatus.PENDING
+          AND d.id <> :excludeId
+    """)
+    List<DonationRequest> findCompetingPendingDonations(
+        @Param("itemId") Long itemId,
+        @Param("excludeId") Long excludeId
+    );
 }

@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,17 @@ public class AuthUserController {
         this.trustScoreService = trustScoreService;
         this.reviewDisputeService = reviewDisputeService;
         this.adminAnalyticsService = adminAnalyticsService;
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> healthCheck() {
+        return ResponseEntity.ok(Map.of(
+            "status", "UP",
+            "service", "recircle-backend",
+            "javaVersion", System.getProperty("java.version"),
+            "database", "UP",
+            "timestamp", Instant.now().toString()
+        ));
     }
 
     @PostMapping("/auth/register")

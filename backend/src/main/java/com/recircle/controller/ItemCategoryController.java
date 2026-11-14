@@ -6,6 +6,7 @@ import com.recircle.security.AuthContext;
 import com.recircle.security.AuthPrincipal;
 import com.recircle.service.ItemService;
 import com.recircle.service.ReviewDisputeService;
+import com.recircle.service.SharingWorkflowService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,21 +34,30 @@ public class ItemCategoryController {
 
     private final ItemService itemService;
     private final ReviewDisputeService reviewDisputeService;
+    private final SharingWorkflowService sharingWorkflowService;
     private final String uploadDir;
 
     public ItemCategoryController(
         ItemService itemService,
         ReviewDisputeService reviewDisputeService,
+        SharingWorkflowService sharingWorkflowService,
         @Value("${recircle.storage.upload-dir:./uploads}") String uploadDir
     ) {
         this.itemService = itemService;
         this.reviewDisputeService = reviewDisputeService;
+        this.sharingWorkflowService = sharingWorkflowService;
         this.uploadDir = uploadDir;
     }
 
     @GetMapping("/categories")
     public ResponseEntity<List<CategoryDto>> getCategories() {
         return ResponseEntity.ok(itemService.getCategories());
+    }
+
+    @PostMapping("/categories")
+    public ResponseEntity<CategoryDto> createCategory(@RequestBody CategoryUpsertRequest req) {
+        AuthContext.requireRole(com.recircle.enums.UserRole.ADMIN, com.recircle.enums.UserRole.MODERATOR);
+        return ResponseEntity.status(HttpStatus.CREATED).body(itemService.createCategory(req));
     }
 
     @GetMapping("/items")
@@ -77,11 +87,22 @@ public class ItemCategoryController {
     @GetMapping("/items/{id}")
     public ResponseEntity<Map<String, Object>> getItemDetails(@PathVariable Long id) {
         Map<String, Object> base = itemService.getItemDetails(id);
+        Map<String, Object> availability = sharingWorkflowService.checkItemDateAvailability(id, null, null);
         return ResponseEntity.ok(Map.of(
             "item", base.get("item"),
             "relatedItems", base.get("relatedItems"),
-            "reviews", reviewDisputeService.getItemReviews(id)
+            "reviews", reviewDisputeService.getItemReviews(id),
+            "reservedDateRanges", availability.get("reservedDateRanges")
         ));
+    }
+
+    @GetMapping("/items/{id}/availability")
+    public ResponseEntity<Map<String, Object>> checkItemAvailability(
+        @PathVariable Long id,
+        @RequestParam(required = false) String startDate,
+        @RequestParam(required = false) String endDate
+    ) {
+        return ResponseEntity.ok(sharingWorkflowService.checkItemDateAvailability(id, startDate, endDate));
     }
 
     @PostMapping("/items")

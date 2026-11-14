@@ -18,7 +18,7 @@ public class EmailVerificationToken {
     @Column(name = "otp_code", nullable = false, length = 12)
     private String otpCode;
 
-    @Column(name = "verification_token", nullable = false, length = 120)
+    @Column(name = "verification_token", nullable = false, unique = true, length = 120)
     private String verificationToken;
 
     @Column(name = "expires_at", nullable = false)

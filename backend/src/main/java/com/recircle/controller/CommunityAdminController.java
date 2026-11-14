@@ -81,7 +81,7 @@ public class CommunityAdminController {
         );
     }
 
-    @GetMapping("/disputes/my-disputes")
+    @GetMapping({"/disputes/my-disputes", "/disputes/my"})
     public ResponseEntity<List<DisputeDto>> getMyDisputes() {
         AuthPrincipal p = AuthContext.requireAuth();
         return ResponseEntity.ok(reviewDisputeService.getMyDisputes(p.getUserId()));
@@ -130,7 +130,9 @@ public class CommunityAdminController {
         @RequestBody Map<String, Object> body
     ) {
         AuthPrincipal p = AuthContext.requireRole(UserRole.ADMIN);
-        String status = body.get("accountStatus") != null ? String.valueOf(body.get("accountStatus")) : null;
+        String status = body.get("accountStatus") != null
+            ? String.valueOf(body.get("accountStatus"))
+            : (body.get("status") != null ? String.valueOf(body.get("status")) : null);
         Boolean verified = body.get("campusVerified") != null ? Boolean.valueOf(String.valueOf(body.get("campusVerified"))) : null;
         return ResponseEntity.ok(adminAnalyticsService.updateUserStatus(id, p.getUserId(), status, verified));
     }

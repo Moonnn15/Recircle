@@ -62,6 +62,10 @@ public class Rental {
     @Column(name = "returned_on_time")
     private Boolean returnedOnTime;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -103,6 +107,8 @@ public class Rental {
     public void setReturnedAt(Instant returnedAt) { this.returnedAt = returnedAt; }
     public Boolean getReturnedOnTime() { return returnedOnTime; }
     public void setReturnedOnTime(Boolean returnedOnTime) { this.returnedOnTime = returnedOnTime; }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

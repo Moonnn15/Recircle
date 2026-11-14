@@ -15,7 +15,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -92,10 +95,13 @@ public class SharingWorkflowService {
         inputValidator.requireNonBlank(req.endDate(), "End date is required.");
         inputValidator.requireNonBlank(req.purpose(), "Borrowing purpose is required.");
 
-        Item item = itemRepository.findById(req.itemId())
+        Item item = itemRepository.findByIdForUpdate(req.itemId())
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
 
-        if (item.isArchived() || item.getAvailabilityStatus() != ListingStatus.AVAILABLE) {
+        if (item.isArchived()
+            || item.getAvailabilityStatus() == ListingStatus.ARCHIVED
+            || item.getAvailabilityStatus() == ListingStatus.UNAVAILABLE
+            || item.getAvailabilityStatus() == ListingStatus.COMPLETED) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "ITEM_UNAVAILABLE", "This item is not currently available for borrowing.");
         }
         if (item.getOwner().getId().equals(borrowerId)) {
@@ -116,11 +122,17 @@ public class SharingWorkflowService {
             );
         }
 
-        boolean overlap = borrowRequestRepository.existsOverlappingReservation(
+        boolean overlapBorrow = borrowRequestRepository.existsOverlappingReservation(
             item.getId(), start, end, ACTIVE_BORROW_STATUSES, null
         );
-        if (overlap) {
+        boolean overlapRental = rentalRepository.existsOverlappingRental(
+            item.getId(), start, end, ACTIVE_RENTAL_STATUSES, null
+        );
+        if (overlapBorrow || overlapRental) {
             throw new ApiException(HttpStatus.CONFLICT, "OVERLAPPING_RESERVATION", "This item already has a confirmed reservation during the selected dates.");
+        }
+        if (borrowRequestRepository.existsDuplicatePendingBorrow(item.getId(), borrowerId, start, end)) {
+            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_BORROW_REQUEST", "You already have a pending borrow request for this item during the selected dates.");
         }
 
         User borrower = userRepository.findById(borrowerId)
@@ -179,6 +191,14 @@ public class SharingWorkflowService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public BorrowRequestDto getBorrowRequestById(Long requestId, Long userId) {
+        BorrowRequest br = borrowRequestRepository.findById(requestId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Borrow request not found."));
+        validateParticipantOrAdmin(userId, br.getBorrower().getId(), br.getLender().getId());
+        return dtoMapper.toBorrowDto(br);
+    }
+
     @Transactional
     public BorrowRequestDto approveBorrowRequest(Long requestId, Long ownerId, String note) {
         BorrowRequest br = borrowRequestRepository.findById(requestId)
@@ -191,11 +211,18 @@ public class SharingWorkflowService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Only pending borrow requests can be approved.");
         }
 
+        // Lock item row for concurrency-safe date-range booking approval (Rule 3.A)
+        Item item = itemRepository.findByIdForUpdate(br.getItem().getId())
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
+
         // Concurrency & overlap recheck inside transaction
-        boolean overlap = borrowRequestRepository.existsOverlappingReservation(
-            br.getItem().getId(), br.getStartDate(), br.getEndDate(), ACTIVE_BORROW_STATUSES, br.getId()
+        boolean overlapBorrow = borrowRequestRepository.existsOverlappingReservation(
+            item.getId(), br.getStartDate(), br.getEndDate(), ACTIVE_BORROW_STATUSES, br.getId()
         );
-        if (overlap) {
+        boolean overlapRental = rentalRepository.existsOverlappingRental(
+            item.getId(), br.getStartDate(), br.getEndDate(), ACTIVE_RENTAL_STATUSES, null
+        );
+        if (overlapBorrow || overlapRental) {
             throw new ApiException(HttpStatus.CONFLICT, "OVERLAPPING_RESERVATION", "Conflicting approved reservation exists for these dates.");
         }
 
@@ -203,9 +230,24 @@ public class SharingWorkflowService {
         br.setOwnerResponseNote(note != null ? inputValidator.sanitizeText(note) : "Approved! Meet at campus pickup location.");
         BorrowRequest saved = borrowRequestRepository.save(br);
 
-        Item item = br.getItem();
-        item.setAvailabilityStatus(ListingStatus.RESERVED);
-        itemRepository.save(item);
+        // Keep listing status AVAILABLE so non-overlapping dates remain bookable; auto-reject overlapping PENDING requests
+        List<BorrowRequest> conflictingPendings = borrowRequestRepository.findOverlappingPendingRequests(
+            item.getId(), br.getStartDate(), br.getEndDate(), br.getId()
+        );
+        for (BorrowRequest pending : conflictingPendings) {
+            pending.setStatus(BorrowStatus.REJECTED);
+            pending.setOwnerResponseNote("Automatically declined due to another approved booking for overlapping dates.");
+            borrowRequestRepository.save(pending);
+            updateLedgerStatus(SharingType.BORROW, pending.getId(), "REJECTED", null, null);
+            notificationService.createNotification(
+                pending.getBorrower(),
+                "BORROW_REQUEST_REJECTED",
+                "Borrow Request Declined (Date Conflict): " + item.getTitle(),
+                "Another request for '" + item.getTitle() + "' was approved for overlapping dates.",
+                "/borrowing",
+                pending.getId()
+            );
+        }
 
         updateLedgerStatus(SharingType.BORROW, saved.getId(), "APPROVED", null, null);
 
@@ -270,6 +312,15 @@ public class SharingWorkflowService {
         }
 
         updateLedgerStatus(SharingType.BORROW, saved.getId(), "CANCELLED", null, null);
+        User notifyTarget = br.getBorrower().getId().equals(userId) ? br.getLender() : br.getBorrower();
+        notificationService.createNotification(
+            notifyTarget,
+            "BORROW_REQUEST_CANCELLED",
+            "Borrow Request Cancelled: " + item.getTitle(),
+            "The borrow request for '" + item.getTitle() + "' (" + br.getStartDate() + " to " + br.getEndDate() + ") was cancelled.",
+            br.getBorrower().getId().equals(userId) ? "/lending" : "/borrowing",
+            saved.getId()
+        );
         return dtoMapper.toBorrowDto(saved);
     }
 
@@ -290,12 +341,13 @@ public class SharingWorkflowService {
 
         updateLedgerStatus(SharingType.BORROW, saved.getId(), "ACTIVE", null, null);
 
+        User counterparty = br.getBorrower().getId().equals(userId) ? br.getLender() : br.getBorrower();
         notificationService.createNotification(
-            br.getLender(),
+            counterparty,
             "HANDOVER_CONFIRMED",
             "Handover Confirmed: " + br.getItem().getTitle(),
-            "Handover for '" + br.getItem().getTitle() + "' is confirmed. Due date: " + br.getEndDate() + ".",
-            "/lending",
+            "Handover for '" + br.getItem().getTitle() + "' is confirmed and active. Due date: " + br.getEndDate() + ".",
+            br.getBorrower().getId().equals(userId) ? "/lending" : "/borrowing",
             saved.getId()
         );
 
@@ -387,12 +439,21 @@ public class SharingWorkflowService {
         if (req.requestedItemId() == null || req.offeredItemId() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Both requested item and offered item must be selected.");
         }
+        if (req.requestedItemId().equals(req.offeredItemId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_EXCHANGE_FORBIDDEN", "Cannot propose an exchange using the same item.");
+        }
         inputValidator.requireNonBlank(req.proposalMessage(), "Exchange proposal message is required.");
 
-        Item requestedItem = itemRepository.findById(req.requestedItemId())
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Requested item not found."));
-        Item offeredItem = itemRepository.findById(req.offeredItemId())
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Offered item not found."));
+        // US11: Lock both item records in ascending ID order to prevent deadlocks
+        Long firstId = Math.min(req.requestedItemId(), req.offeredItemId());
+        Long secondId = Math.max(req.requestedItemId(), req.offeredItemId());
+        Item firstLocked = itemRepository.findByIdForUpdate(firstId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found: " + firstId));
+        Item secondLocked = itemRepository.findByIdForUpdate(secondId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found: " + secondId));
+
+        Item requestedItem = req.requestedItemId().equals(firstId) ? firstLocked : secondLocked;
+        Item offeredItem = req.offeredItemId().equals(firstId) ? firstLocked : secondLocked;
 
         if (!offeredItem.getOwner().getId().equals(proposerId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "OWNERSHIP_ERROR", "You can only offer an item that you own.");
@@ -400,8 +461,10 @@ public class SharingWorkflowService {
         if (requestedItem.getOwner().getId().equals(proposerId)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_EXCHANGE_FORBIDDEN", "You cannot propose an exchange with your own listing.");
         }
-        if (requestedItem.getAvailabilityStatus() != ListingStatus.AVAILABLE || offeredItem.getAvailabilityStatus() != ListingStatus.AVAILABLE) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Both items must be AVAILABLE to initiate an exchange.");
+        if (requestedItem.isArchived() || offeredItem.isArchived()
+            || requestedItem.getAvailabilityStatus() != ListingStatus.AVAILABLE
+            || offeredItem.getAvailabilityStatus() != ListingStatus.AVAILABLE) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ITEM_UNAVAILABLE", "Both items must be AVAILABLE to initiate an exchange.");
         }
 
         boolean reqBusy = exchangeOfferRepository.existsActiveExchangeForItem(requestedItem.getId(), ACTIVE_EXCHANGE_STATUSES, null);
@@ -439,7 +502,7 @@ public class SharingWorkflowService {
             "EXCHANGE_PROPOSAL_RECEIVED",
             "New Exchange Proposal for " + requestedItem.getTitle(),
             eo.getProposer().getFullName() + " offered '" + offeredItem.getTitle() + "' in exchange for '" + requestedItem.getTitle() + "'.",
-            "/exchanges",
+            "/exchanges/" + saved.getId(),
             saved.getId()
         );
 
@@ -455,9 +518,10 @@ public class SharingWorkflowService {
     }
 
     @Transactional(readOnly = true)
-    public ExchangeOfferDto getExchangeById(Long exchangeId) {
+    public ExchangeOfferDto getExchangeById(Long exchangeId, Long userId) {
         ExchangeOffer eo = exchangeOfferRepository.findById(exchangeId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Exchange offer not found."));
+        validateParticipantOrAdmin(userId, eo.getProposer().getId(), eo.getReceiver().getId());
         return dtoMapper.toExchangeDto(eo);
     }
 
@@ -472,15 +536,48 @@ public class SharingWorkflowService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Only pending exchange offers can be accepted.");
         }
 
+        // US11: Lock both item records in ascending ID order
+        Long reqItemId = eo.getRequestedItem().getId();
+        Long offItemId = eo.getOfferedItem().getId();
+        Long firstId = Math.min(reqItemId, offItemId);
+        Long secondId = Math.max(reqItemId, offItemId);
+        Item firstLocked = itemRepository.findByIdForUpdate(firstId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
+        Item secondLocked = itemRepository.findByIdForUpdate(secondId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
+
+        Item reqItem = reqItemId.equals(firstId) ? firstLocked : secondLocked;
+        Item offItem = offItemId.equals(firstId) ? firstLocked : secondLocked;
+
+        if (reqItem.isArchived() || offItem.isArchived()
+            || reqItem.getAvailabilityStatus() != ListingStatus.AVAILABLE
+            || offItem.getAvailabilityStatus() != ListingStatus.AVAILABLE) {
+            throw new ApiException(HttpStatus.CONFLICT, "ITEM_UNAVAILABLE", "Both items must still be AVAILABLE to accept this exchange.");
+        }
+
         eo.setStatus(ExchangeStatus.ACCEPTED);
         ExchangeOffer saved = exchangeOfferRepository.save(eo);
 
-        Item reqItem = eo.getRequestedItem();
-        Item offItem = eo.getOfferedItem();
         reqItem.setAvailabilityStatus(ListingStatus.RESERVED);
         offItem.setAvailabilityStatus(ListingStatus.RESERVED);
         itemRepository.save(reqItem);
         itemRepository.save(offItem);
+
+        // Reject competing pending exchanges involving either item
+        List<ExchangeOffer> competing = exchangeOfferRepository.findCompetingPendingExchanges(reqItemId, offItemId, saved.getId());
+        for (ExchangeOffer comp : competing) {
+            comp.setStatus(ExchangeStatus.REJECTED);
+            exchangeOfferRepository.save(comp);
+            updateLedgerStatus(SharingType.EXCHANGE, comp.getId(), "REJECTED", null, null);
+            notificationService.createNotification(
+                comp.getProposer(),
+                "EXCHANGE_REJECTED",
+                "Exchange Proposal Declined (Item Reserved)",
+                "One of the items in your exchange proposal was accepted in another swap.",
+                "/exchanges",
+                comp.getId()
+            );
+        }
 
         updateLedgerStatus(SharingType.EXCHANGE, saved.getId(), "ACCEPTED", null, null);
 
@@ -488,8 +585,8 @@ public class SharingWorkflowService {
             eo.getProposer(),
             "EXCHANGE_ACCEPTED",
             "Exchange Proposal Accepted!",
-            eo.getReceiver().getFullName() + " accepted your exchange offer! Both items are now reserved.",
-            "/exchanges",
+            eo.getReceiver().getFullName() + " accepted your exchange offer! Both items are now reserved for handover.",
+            "/exchanges/" + saved.getId(),
             saved.getId()
         );
 
@@ -503,9 +600,64 @@ public class SharingWorkflowService {
         if (!eo.getReceiver().getId().equals(userId) && !eo.getProposer().getId().equals(userId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Unauthorized action.");
         }
+        if (eo.getStatus() != ExchangeStatus.PENDING && eo.getStatus() != ExchangeStatus.ACCEPTED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot reject an already completed or cancelled exchange.");
+        }
+        if (eo.getStatus() == ExchangeStatus.ACCEPTED) {
+            Item reqItem = eo.getRequestedItem();
+            Item offItem = eo.getOfferedItem();
+            reqItem.setAvailabilityStatus(ListingStatus.AVAILABLE);
+            offItem.setAvailabilityStatus(ListingStatus.AVAILABLE);
+            itemRepository.save(reqItem);
+            itemRepository.save(offItem);
+        }
         eo.setStatus(ExchangeStatus.REJECTED);
         ExchangeOffer saved = exchangeOfferRepository.save(eo);
         updateLedgerStatus(SharingType.EXCHANGE, saved.getId(), "REJECTED", null, null);
+
+        User notifyUser = eo.getReceiver().getId().equals(userId) ? eo.getProposer() : eo.getReceiver();
+        notificationService.createNotification(
+            notifyUser,
+            "EXCHANGE_REJECTED",
+            "Exchange Proposal Declined",
+            "The exchange proposal for '" + eo.getRequestedItem().getTitle() + "' was declined.",
+            "/exchanges",
+            saved.getId()
+        );
+        return dtoMapper.toExchangeDto(saved);
+    }
+
+    @Transactional
+    public ExchangeOfferDto cancelExchangeOffer(Long exchangeId, Long userId) {
+        ExchangeOffer eo = exchangeOfferRepository.findById(exchangeId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Exchange offer not found."));
+        if (!eo.getProposer().getId().equals(userId) && !eo.getReceiver().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Only exchange participants can cancel this proposal.");
+        }
+        if (eo.getStatus() != ExchangeStatus.PENDING && eo.getStatus() != ExchangeStatus.ACCEPTED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot cancel an exchange that is already in handover or completed.");
+        }
+        if (eo.getStatus() == ExchangeStatus.ACCEPTED) {
+            Item reqItem = eo.getRequestedItem();
+            Item offItem = eo.getOfferedItem();
+            reqItem.setAvailabilityStatus(ListingStatus.AVAILABLE);
+            offItem.setAvailabilityStatus(ListingStatus.AVAILABLE);
+            itemRepository.save(reqItem);
+            itemRepository.save(offItem);
+        }
+        eo.setStatus(ExchangeStatus.CANCELLED);
+        ExchangeOffer saved = exchangeOfferRepository.save(eo);
+        updateLedgerStatus(SharingType.EXCHANGE, saved.getId(), "CANCELLED", null, null);
+
+        User notifyUser = eo.getProposer().getId().equals(userId) ? eo.getReceiver() : eo.getProposer();
+        notificationService.createNotification(
+            notifyUser,
+            "EXCHANGE_CANCELLED",
+            "Exchange Proposal Cancelled",
+            "The exchange proposal for '" + eo.getRequestedItem().getTitle() + "' was cancelled.",
+            "/exchanges",
+            saved.getId()
+        );
         return dtoMapper.toExchangeDto(saved);
     }
 
@@ -531,6 +683,16 @@ public class SharingWorkflowService {
             eo.setStatus(ExchangeStatus.HANDOVER_PENDING);
             ExchangeOffer saved = exchangeOfferRepository.save(eo);
             updateLedgerStatus(SharingType.EXCHANGE, saved.getId(), "HANDOVER_PENDING", null, null);
+
+            User counterparty = eo.getProposer().getId().equals(userId) ? eo.getReceiver() : eo.getProposer();
+            notificationService.createNotification(
+                counterparty,
+                "EXCHANGE_HANDOVER_CONFIRMED",
+                "Exchange Handover Confirmed by Partner",
+                "Your exchange partner confirmed handover for '" + eo.getRequestedItem().getTitle() + "'. Please confirm your handover to complete the swap.",
+                "/exchanges/" + saved.getId(),
+                saved.getId()
+            );
             return dtoMapper.toExchangeDto(saved);
         }
     }
@@ -542,8 +704,21 @@ public class SharingWorkflowService {
         if (!eo.getProposer().getId().equals(userId) && !eo.getReceiver().getId().equals(userId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only exchange participants can complete the exchange.");
         }
-        eo.setProposerHandoverConfirmed(true);
-        eo.setReceiverHandoverConfirmed(true);
+        if (eo.getStatus() != ExchangeStatus.ACCEPTED && eo.getStatus() != ExchangeStatus.HANDOVER_PENDING) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Exchange must be ACCEPTED or HANDOVER_PENDING before completion.");
+        }
+        if (eo.getProposer().getId().equals(userId)) {
+            eo.setProposerHandoverConfirmed(true);
+        } else {
+            eo.setReceiverHandoverConfirmed(true);
+        }
+        if (!eo.isProposerHandoverConfirmed() || !eo.isReceiverHandoverConfirmed()) {
+            throw new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "DUAL_HANDOVER_REQUIRED",
+                "Both exchange participants must confirm handover before completing the exchange."
+            );
+        }
         return finalizeExchangeCompletion(eo);
     }
 
@@ -565,6 +740,23 @@ public class SharingWorkflowService {
         trustScoreService.recalculateTrustScore(eo.getProposer().getId(), "EXCHANGE_COMPLETED", "Completed campus item exchange.");
         trustScoreService.recalculateTrustScore(eo.getReceiver().getId(), "EXCHANGE_COMPLETED", "Completed campus item exchange.");
 
+        notificationService.createNotification(
+            eo.getProposer(),
+            "EXCHANGE_COMPLETED",
+            "Exchange Completed! Leave a Review",
+            "Swap of '" + offItem.getTitle() + "' and '" + reqItem.getTitle() + "' is complete.",
+            "/exchanges/" + saved.getId(),
+            saved.getId()
+        );
+        notificationService.createNotification(
+            eo.getReceiver(),
+            "EXCHANGE_COMPLETED",
+            "Exchange Completed! Leave a Review",
+            "Swap of '" + offItem.getTitle() + "' and '" + reqItem.getTitle() + "' is complete.",
+            "/exchanges/" + saved.getId(),
+            saved.getId()
+        );
+
         return dtoMapper.toExchangeDto(saved);
     }
 
@@ -572,8 +764,8 @@ public class SharingWorkflowService {
     // 3. RENTAL MANAGEMENT WORKFLOW (Backend Cost Calculation + Simulated Pay)
     // ========================================================================
 
-    @Transactional
-    public RentalDto createRentalRequest(Long renterId, RentalCreateRequest req) {
+    @Transactional(readOnly = true)
+    public RentalCalculationDto calculateRentalQuote(RentalCalculateRequest req) {
         if (req.itemId() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Item ID is required.");
         }
@@ -583,11 +775,66 @@ public class SharingWorkflowService {
         Item item = itemRepository.findById(req.itemId())
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
 
+        LocalDate start = LocalDate.parse(req.startDate());
+        LocalDate end = LocalDate.parse(req.endDate());
+        if (end.isBefore(start)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DATE_RANGE", "End date cannot be earlier than start date.");
+        }
+
+        long diffDays = ChronoUnit.DAYS.between(start, end);
+        int rentalDays = (int) (diffDays == 0 ? 1 : diffDays);
+        BigDecimal dailyRate = item.getRentalPricePerDay().compareTo(BigDecimal.ZERO) > 0
+            ? item.getRentalPricePerDay()
+            : new BigDecimal("50.00");
+        BigDecimal totalRentalAmount = dailyRate.multiply(BigDecimal.valueOf(rentalDays));
+        BigDecimal deposit = item.getSecurityDeposit() != null ? item.getSecurityDeposit() : BigDecimal.ZERO;
+        BigDecimal totalPayable = totalRentalAmount.add(deposit);
+
+        boolean overlapRental = rentalRepository.existsOverlappingRental(
+            item.getId(), start, end, ACTIVE_RENTAL_STATUSES, null
+        );
+        boolean overlapBorrow = borrowRequestRepository.existsOverlappingReservation(
+            item.getId(), start, end, ACTIVE_BORROW_STATUSES, null
+        );
+        boolean available = !item.isArchived()
+            && item.getAvailabilityStatus() == ListingStatus.AVAILABLE
+            && !overlapRental && !overlapBorrow;
+
+        return new RentalCalculationDto(
+            item.getId(),
+            item.getTitle(),
+            start.toString(),
+            end.toString(),
+            rentalDays,
+            dailyRate,
+            totalRentalAmount,
+            deposit,
+            totalPayable,
+            available,
+            "PENDING_OR_SIMULATED",
+            "Payment gateway is not integrated. Payments and security deposits remain PENDING unless explicitly simulated for academic demonstration."
+        );
+    }
+
+    @Transactional
+    public RentalDto createRentalRequest(Long renterId, RentalCreateRequest req) {
+        if (req.itemId() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Item ID is required.");
+        }
+        inputValidator.requireNonBlank(req.startDate(), "Rental start date is required.");
+        inputValidator.requireNonBlank(req.endDate(), "Rental end date is required.");
+
+        Item item = itemRepository.findByIdForUpdate(req.itemId())
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
+
         if (item.getOwner().getId().equals(renterId)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_RENTAL_FORBIDDEN", "You cannot rent your own item.");
         }
-        if (item.isArchived() || item.getAvailabilityStatus() != ListingStatus.AVAILABLE) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Item is not currently available for rent.");
+        if (item.isArchived()
+            || item.getAvailabilityStatus() == ListingStatus.ARCHIVED
+            || item.getAvailabilityStatus() == ListingStatus.UNAVAILABLE
+            || item.getAvailabilityStatus() == ListingStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ITEM_UNAVAILABLE", "Item is not currently available for rent.");
         }
 
         LocalDate start = LocalDate.parse(req.startDate());
@@ -600,10 +847,13 @@ public class SharingWorkflowService {
         long diffDays = ChronoUnit.DAYS.between(start, end);
         int rentalDays = (int) (diffDays == 0 ? 1 : diffDays);
 
-        boolean overlap = rentalRepository.existsOverlappingRental(
+        boolean overlapRental = rentalRepository.existsOverlappingRental(
             item.getId(), start, end, ACTIVE_RENTAL_STATUSES, null
         );
-        if (overlap) {
+        boolean overlapBorrow = borrowRequestRepository.existsOverlappingReservation(
+            item.getId(), start, end, ACTIVE_BORROW_STATUSES, null
+        );
+        if (overlapRental || overlapBorrow) {
             throw new ApiException(HttpStatus.CONFLICT, "OVERLAPPING_RENTAL", "This item already has a confirmed rental during the requested period.");
         }
 
@@ -625,9 +875,14 @@ public class SharingWorkflowService {
         r.setDailyRate(dailyRate);
         r.setSecurityDeposit(item.getSecurityDeposit());
         r.setTotalRentalAmount(totalRentalAmount);
+        // Rule 3.B: Represent payment as PENDING unless simulated demo payment is explicitly requested
         r.setPaymentStatus(req.simulateImmediatePayment() ? PaymentStatus.PAID_SIMULATED : PaymentStatus.PENDING);
         r.setStatus(RentalStatus.PENDING);
         Rental saved = rentalRepository.save(r);
+
+        String paymentNote = req.simulateImmediatePayment()
+            ? "Rental for " + rentalDays + " days @ ₹" + dailyRate + "/day (Simulated Demo Payment)"
+            : "Rental for " + rentalDays + " days @ ₹" + dailyRate + "/day (Payment Pending - Gateway Not Integrated)";
 
         createOrUpdateLedgerRecord(
             SharingType.RENT,
@@ -641,7 +896,7 @@ public class SharingWorkflowService {
             saved.getPaymentStatus(),
             start,
             end,
-            "Rental for " + rentalDays + " days @ ₹" + dailyRate + "/day (Simulated Payment)"
+            paymentNote
         );
 
         notificationService.createNotification(
@@ -649,7 +904,7 @@ public class SharingWorkflowService {
             "RENTAL_REQUEST_RECEIVED",
             "New Rental Request: " + item.getTitle(),
             renter.getFullName() + " requested to rent '" + item.getTitle() + "' for " + rentalDays + " days (Total: ₹" + totalRentalAmount + ").",
-            "/rentals",
+            "/rentals/" + saved.getId(),
             saved.getId()
         );
 
@@ -665,9 +920,10 @@ public class SharingWorkflowService {
     }
 
     @Transactional(readOnly = true)
-    public RentalDto getRentalById(Long rentalId) {
+    public RentalDto getRentalById(Long rentalId, Long userId) {
         Rental r = rentalRepository.findById(rentalId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Rental not found."));
+        validateParticipantOrAdmin(userId, r.getRenter().getId(), r.getOwner().getId());
         return dtoMapper.toRentalDto(r);
     }
 
@@ -678,20 +934,48 @@ public class SharingWorkflowService {
         if (!r.getOwner().getId().equals(ownerId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only the item owner can approve this rental.");
         }
-        boolean overlap = rentalRepository.existsOverlappingRental(
-            r.getItem().getId(), r.getStartDate(), r.getEndDate(), ACTIVE_RENTAL_STATUSES, r.getId()
-        );
-        if (overlap) {
-            throw new ApiException(HttpStatus.CONFLICT, "Conflicting approved rental exists for these dates.");
+        if (r.getStatus() != RentalStatus.PENDING) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only pending rental requests can be approved.");
         }
 
+        // Lock item row for concurrency-safe date-range booking approval (Rule 3.A)
+        Item item = itemRepository.findByIdForUpdate(r.getItem().getId())
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
+
+        boolean overlapRental = rentalRepository.existsOverlappingRental(
+            item.getId(), r.getStartDate(), r.getEndDate(), ACTIVE_RENTAL_STATUSES, r.getId()
+        );
+        boolean overlapBorrow = borrowRequestRepository.existsOverlappingReservation(
+            item.getId(), r.getStartDate(), r.getEndDate(), ACTIVE_BORROW_STATUSES, null
+        );
+        if (overlapRental || overlapBorrow) {
+            throw new ApiException(HttpStatus.CONFLICT, "OVERLAPPING_RENTAL", "Conflicting approved rental or reservation exists for these dates.");
+        }
+
+        // Rule 3.B: Do NOT mark payment as PAID merely because owner approved the rental request!
         r.setStatus(RentalStatus.APPROVED);
-        r.setPaymentStatus(PaymentStatus.PAID_SIMULATED);
         Rental saved = rentalRepository.save(r);
 
-        Item item = r.getItem();
-        item.setAvailabilityStatus(ListingStatus.RESERVED);
-        itemRepository.save(item);
+        // Rule 3.A: Keep listing status AVAILABLE so non-overlapping dates remain bookable; auto-reject overlapping PENDING rentals
+        List<Rental> conflictingPendings = rentalRepository.findOverlappingPendingRentals(
+            item.getId(), r.getStartDate(), r.getEndDate(), r.getId()
+        );
+        for (Rental pending : conflictingPendings) {
+            pending.setStatus(RentalStatus.REJECTED);
+            if (pending.getPaymentStatus() == PaymentStatus.PAID_SIMULATED) {
+                pending.setPaymentStatus(PaymentStatus.REFUNDED_SIMULATED);
+            }
+            rentalRepository.save(pending);
+            updateLedgerStatus(SharingType.RENT, pending.getId(), "REJECTED", null, null);
+            notificationService.createNotification(
+                pending.getRenter(),
+                "RENTAL_REJECTED",
+                "Rental Request Declined (Date Conflict): " + item.getTitle(),
+                "Another rental booking for '" + item.getTitle() + "' was approved for overlapping dates.",
+                "/rentals",
+                pending.getId()
+            );
+        }
 
         updateLedgerStatus(SharingType.RENT, saved.getId(), "APPROVED", null, null);
 
@@ -700,7 +984,7 @@ public class SharingWorkflowService {
             "RENTAL_APPROVED",
             "Rental Approved: " + item.getTitle(),
             "Your rental request for '" + item.getTitle() + "' has been approved!",
-            "/rentals",
+            "/rentals/" + saved.getId(),
             saved.getId()
         );
 
@@ -714,12 +998,53 @@ public class SharingWorkflowService {
         if (!r.getOwner().getId().equals(ownerId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only the item owner can reject this rental.");
         }
+        if (r.getStatus() != RentalStatus.PENDING && r.getStatus() != RentalStatus.APPROVED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only pending or approved rentals can be rejected.");
+        }
         r.setStatus(RentalStatus.REJECTED);
         if (r.getPaymentStatus() == PaymentStatus.PAID_SIMULATED) {
             r.setPaymentStatus(PaymentStatus.REFUNDED_SIMULATED);
         }
         Rental saved = rentalRepository.save(r);
         updateLedgerStatus(SharingType.RENT, saved.getId(), "REJECTED", null, null);
+
+        notificationService.createNotification(
+            r.getRenter(),
+            "RENTAL_REJECTED",
+            "Rental Request Declined: " + r.getItem().getTitle(),
+            "Your rental request for '" + r.getItem().getTitle() + "' was declined by the owner.",
+            "/rentals",
+            saved.getId()
+        );
+        return dtoMapper.toRentalDto(saved);
+    }
+
+    @Transactional
+    public RentalDto cancelRental(Long rentalId, Long userId) {
+        Rental r = rentalRepository.findById(rentalId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Rental not found."));
+        if (!r.getRenter().getId().equals(userId) && !r.getOwner().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Only rental participants can cancel this rental.");
+        }
+        if (r.getStatus() != RentalStatus.PENDING && r.getStatus() != RentalStatus.APPROVED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot cancel an already active or completed rental.");
+        }
+        r.setStatus(RentalStatus.CANCELLED);
+        if (r.getPaymentStatus() == PaymentStatus.PAID_SIMULATED) {
+            r.setPaymentStatus(PaymentStatus.REFUNDED_SIMULATED);
+        }
+        Rental saved = rentalRepository.save(r);
+        updateLedgerStatus(SharingType.RENT, saved.getId(), "CANCELLED", null, null);
+
+        User notifyUser = r.getRenter().getId().equals(userId) ? r.getOwner() : r.getRenter();
+        notificationService.createNotification(
+            notifyUser,
+            "RENTAL_CANCELLED",
+            "Rental Booking Cancelled: " + r.getItem().getTitle(),
+            "The rental request for '" + r.getItem().getTitle() + "' (" + r.getStartDate() + " to " + r.getEndDate() + ") was cancelled.",
+            "/rentals",
+            saved.getId()
+        );
         return dtoMapper.toRentalDto(saved);
     }
 
@@ -730,11 +1055,23 @@ public class SharingWorkflowService {
         if (!r.getRenter().getId().equals(userId) && !r.getOwner().getId().equals(userId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Unauthorized.");
         }
+        if (r.getStatus() != RentalStatus.APPROVED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Rental must be APPROVED before confirming handover.");
+        }
         r.setStatus(RentalStatus.ACTIVE);
-        r.setPaymentStatus(PaymentStatus.PAID_SIMULATED);
         r.setHandoverConfirmedAt(Instant.now());
         Rental saved = rentalRepository.save(r);
         updateLedgerStatus(SharingType.RENT, saved.getId(), "ACTIVE", null, null);
+
+        User counterparty = r.getRenter().getId().equals(userId) ? r.getOwner() : r.getRenter();
+        notificationService.createNotification(
+            counterparty,
+            "RENTAL_HANDOVER_CONFIRMED",
+            "Rental Handover Confirmed: " + r.getItem().getTitle(),
+            "Handover for rented item '" + r.getItem().getTitle() + "' is confirmed. Return due on " + r.getEndDate() + ".",
+            "/rentals/" + saved.getId(),
+            saved.getId()
+        );
         return dtoMapper.toRentalDto(saved);
     }
 
@@ -744,6 +1081,9 @@ public class SharingWorkflowService {
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Rental not found."));
         if (!r.getOwner().getId().equals(ownerId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only the item owner can confirm rental return.");
+        }
+        if (r.getStatus() != RentalStatus.ACTIVE && r.getStatus() != RentalStatus.OVERDUE) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Rental must be ACTIVE or OVERDUE to confirm return.");
         }
 
         Instant now = Instant.now();
@@ -762,6 +1102,15 @@ public class SharingWorkflowService {
         trustScoreService.recalculateTrustScore(r.getRenter().getId(), "RENTAL_COMPLETED", "Completed rental of '" + item.getTitle() + "'.");
         trustScoreService.recalculateTrustScore(r.getOwner().getId(), "RENTAL_COMPLETED", "Completed rental as owner of '" + item.getTitle() + "'.");
 
+        notificationService.createNotification(
+            r.getRenter(),
+            "RENTAL_COMPLETED",
+            "Rental Return Confirmed! Leave a Review",
+            r.getOwner().getFullName() + " confirmed the return of rented item '" + item.getTitle() + "'.",
+            "/reviews",
+            saved.getId()
+        );
+
         return dtoMapper.toRentalDto(saved);
     }
 
@@ -777,7 +1126,7 @@ public class SharingWorkflowService {
         }
         inputValidator.requireNonBlank(req.motivationMessage(), "Please explain how this donated resource will help your studies.");
 
-        Item item = itemRepository.findById(targetItemId)
+        Item item = itemRepository.findByIdForUpdate(targetItemId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Donation listing not found."));
 
         if (item.getSharingType() != SharingType.DONATE) {
@@ -786,8 +1135,14 @@ public class SharingWorkflowService {
         if (item.getOwner().getId().equals(requesterId)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_REQUEST_FORBIDDEN", "You cannot request your own donated item.");
         }
+        if (item.isArchived() || item.getAvailabilityStatus() == ListingStatus.ARCHIVED || item.getAvailabilityStatus() == ListingStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ITEM_UNAVAILABLE", "This donated item is no longer available.");
+        }
         if (donationRequestRepository.existsByItemIdAndStatusIn(item.getId(), List.of(DonationStatus.APPROVED, DonationStatus.COMPLETED))) {
             throw new ApiException(HttpStatus.CONFLICT, "ALREADY_ASSIGNED", "This donation has already been assigned to a recipient.");
+        }
+        if (donationRequestRepository.existsByItemIdAndRequesterIdAndStatusIn(item.getId(), requesterId, List.of(DonationStatus.PENDING))) {
+            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_DONATION_REQUEST", "You already have a pending request for this donated item.");
         }
 
         User requester = userRepository.findById(requesterId)
@@ -836,6 +1191,14 @@ public class SharingWorkflowService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public DonationRequestDto getDonationRequestById(Long requestId, Long userId) {
+        DonationRequest dr = donationRequestRepository.findById(requestId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Donation request not found."));
+        validateParticipantOrAdmin(userId, dr.getRequester().getId(), dr.getDonor().getId());
+        return dtoMapper.toDonationDto(dr);
+    }
+
     @Transactional
     public DonationRequestDto approveDonationRequest(Long requestId, Long donorId) {
         DonationRequest dr = donationRequestRepository.findById(requestId)
@@ -843,16 +1206,39 @@ public class SharingWorkflowService {
         if (!dr.getDonor().getId().equals(donorId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only the donor can approve a recipient.");
         }
-        if (donationRequestRepository.existsByItemIdAndStatusIn(dr.getItem().getId(), List.of(DonationStatus.APPROVED, DonationStatus.COMPLETED))) {
+        if (dr.getStatus() != DonationStatus.PENDING) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only pending donation requests can be approved.");
+        }
+
+        // Lock item row to enforce single-recipient atomicity
+        Item item = itemRepository.findByIdForUpdate(dr.getItem().getId())
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found."));
+
+        if (donationRequestRepository.existsByItemIdAndStatusIn(item.getId(), List.of(DonationStatus.APPROVED, DonationStatus.COMPLETED))) {
             throw new ApiException(HttpStatus.CONFLICT, "ALREADY_ASSIGNED", "A donation cannot be assigned to multiple recipients.");
         }
 
         dr.setStatus(DonationStatus.APPROVED);
         DonationRequest saved = donationRequestRepository.save(dr);
 
-        Item item = dr.getItem();
         item.setAvailabilityStatus(ListingStatus.RESERVED);
         itemRepository.save(item);
+
+        // US13: Atomically reject all competing pending requests for this donated item
+        List<DonationRequest> competingRequests = donationRequestRepository.findCompetingPendingDonations(item.getId(), saved.getId());
+        for (DonationRequest comp : competingRequests) {
+            comp.setStatus(DonationStatus.REJECTED);
+            donationRequestRepository.save(comp);
+            updateLedgerStatus(SharingType.DONATE, comp.getId(), "REJECTED", null, null);
+            notificationService.createNotification(
+                comp.getRequester(),
+                "DONATION_REJECTED",
+                "Donation Assigned to Another Student: " + item.getTitle(),
+                "Thank you for your interest. The donor selected another recipient for '" + item.getTitle() + "'.",
+                "/donations/requests",
+                comp.getId()
+            );
+        }
 
         updateLedgerStatus(SharingType.DONATE, saved.getId(), "APPROVED", null, null);
 
@@ -875,9 +1261,52 @@ public class SharingWorkflowService {
         if (!dr.getDonor().getId().equals(donorId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only the donor can reject this request.");
         }
+        if (dr.getStatus() != DonationStatus.PENDING) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only pending donation requests can be rejected.");
+        }
         dr.setStatus(DonationStatus.REJECTED);
         DonationRequest saved = donationRequestRepository.save(dr);
         updateLedgerStatus(SharingType.DONATE, saved.getId(), "REJECTED", null, null);
+
+        notificationService.createNotification(
+            dr.getRequester(),
+            "DONATION_REJECTED",
+            "Donation Request Declined: " + dr.getItem().getTitle(),
+            "Your donation request for '" + dr.getItem().getTitle() + "' was declined.",
+            "/donations/requests",
+            saved.getId()
+        );
+        return dtoMapper.toDonationDto(saved);
+    }
+
+    @Transactional
+    public DonationRequestDto cancelDonationRequest(Long requestId, Long userId) {
+        DonationRequest dr = donationRequestRepository.findById(requestId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Donation request not found."));
+        if (!dr.getRequester().getId().equals(userId) && !dr.getDonor().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Only donation participants can cancel this request.");
+        }
+        if (dr.getStatus() != DonationStatus.PENDING && dr.getStatus() != DonationStatus.APPROVED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot cancel a completed or already rejected donation request.");
+        }
+        if (dr.getStatus() == DonationStatus.APPROVED) {
+            Item item = dr.getItem();
+            item.setAvailabilityStatus(ListingStatus.AVAILABLE);
+            itemRepository.save(item);
+        }
+        dr.setStatus(DonationStatus.CANCELLED);
+        DonationRequest saved = donationRequestRepository.save(dr);
+        updateLedgerStatus(SharingType.DONATE, saved.getId(), "CANCELLED", null, null);
+
+        User notifyUser = dr.getRequester().getId().equals(userId) ? dr.getDonor() : dr.getRequester();
+        notificationService.createNotification(
+            notifyUser,
+            "DONATION_CANCELLED",
+            "Donation Request Cancelled: " + dr.getItem().getTitle(),
+            "The donation request for '" + dr.getItem().getTitle() + "' was cancelled.",
+            "/donations/requests",
+            saved.getId()
+        );
         return dtoMapper.toDonationDto(saved);
     }
 
@@ -887,6 +1316,9 @@ public class SharingWorkflowService {
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Donation request not found."));
         if (!dr.getDonor().getId().equals(userId) && !dr.getRequester().getId().equals(userId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only donation participants can confirm handover completion.");
+        }
+        if (dr.getStatus() != DonationStatus.APPROVED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Donation request must be APPROVED before confirming handover completion.");
         }
 
         Instant now = Instant.now();
@@ -903,6 +1335,23 @@ public class SharingWorkflowService {
 
         trustScoreService.recalculateTrustScore(dr.getDonor().getId(), "DONATION_COMPLETED", "Donated campus resource '" + item.getTitle() + "'.");
         trustScoreService.recalculateTrustScore(dr.getRequester().getId(), "DONATION_RECEIVED", "Received campus donation '" + item.getTitle() + "'.");
+
+        notificationService.createNotification(
+            dr.getRequester(),
+            "DONATION_COMPLETED",
+            "Donation Handover Completed! Leave a Review",
+            "Handover of donated resource '" + item.getTitle() + "' is complete.",
+            "/reviews",
+            saved.getId()
+        );
+        notificationService.createNotification(
+            dr.getDonor(),
+            "DONATION_COMPLETED",
+            "Donation Handover Completed! Leave a Review",
+            "Handover of donated resource '" + item.getTitle() + "' to " + dr.getRequester().getFullName() + " is complete.",
+            "/reviews",
+            saved.getId()
+        );
 
         return dtoMapper.toDonationDto(saved);
     }
@@ -923,7 +1372,22 @@ public class SharingWorkflowService {
     public TransactionDto getTransactionById(Long txId, Long currentUserId) {
         TransactionRecord t = transactionRecordRepository.findById(txId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Transaction record not found."));
+        validateParticipantOrAdmin(currentUserId, t.getInitiatorUser().getId(), t.getCounterpartyUser().getId());
         return dtoMapper.toTransactionDto(t, currentUserId);
+    }
+
+    private void validateParticipantOrAdmin(Long currentUserId, Long party1Id, Long party2Id) {
+        if (currentUserId == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Authentication required.");
+        }
+        if (currentUserId.equals(party1Id) || currentUserId.equals(party2Id)) {
+            return;
+        }
+        User u = userRepository.findById(currentUserId).orElse(null);
+        if (u != null && (u.getRole() == UserRole.ADMIN || u.getRole() == UserRole.MODERATOR)) {
+            return;
+        }
+        throw new ApiException(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You are not authorized to view or modify this transaction.");
     }
 
     private TransactionRecord createOrUpdateLedgerRecord(
@@ -963,6 +1427,61 @@ public class SharingWorkflowService {
         return transactionRecordRepository.save(tx);
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkItemDateAvailability(Long itemId, String startDateStr, String endDateStr) {
+        Item item = itemRepository.findById(itemId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item listing not found."));
+
+        List<BorrowRequest> activeBorrows = borrowRequestRepository.findActiveReservationsForItem(itemId, ACTIVE_BORROW_STATUSES);
+        List<Rental> activeRentals = rentalRepository.findActiveRentalsForItem(itemId, ACTIVE_RENTAL_STATUSES);
+
+        List<Map<String, Object>> reservedRanges = new ArrayList<>();
+        for (BorrowRequest b : activeBorrows) {
+            reservedRanges.add(Map.of(
+                "bookingId", b.getId(),
+                "type", "BORROW",
+                "status", b.getStatus().name(),
+                "startDate", b.getStartDate().toString(),
+                "endDate", b.getEndDate().toString()
+            ));
+        }
+        for (Rental r : activeRentals) {
+            reservedRanges.add(Map.of(
+                "bookingId", r.getId(),
+                "type", "RENT",
+                "status", r.getStatus().name(),
+                "startDate", r.getStartDate().toString(),
+                "endDate", r.getEndDate().toString()
+            ));
+        }
+
+        boolean listingBookable = !item.isArchived()
+            && item.getAvailabilityStatus() != ListingStatus.ARCHIVED
+            && item.getAvailabilityStatus() != ListingStatus.UNAVAILABLE
+            && item.getAvailabilityStatus() != ListingStatus.COMPLETED;
+
+        boolean availableForRange = listingBookable;
+        if (startDateStr != null && !startDateStr.isBlank() && endDateStr != null && !endDateStr.isBlank()) {
+            LocalDate start = LocalDate.parse(startDateStr);
+            LocalDate end = LocalDate.parse(endDateStr);
+            if (end.isBefore(start)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DATE_RANGE", "End date cannot be earlier than start date.");
+            }
+            boolean overlapBorrow = borrowRequestRepository.existsOverlappingReservation(itemId, start, end, ACTIVE_BORROW_STATUSES, null);
+            boolean overlapRental = rentalRepository.existsOverlappingRental(itemId, start, end, ACTIVE_RENTAL_STATUSES, null);
+            availableForRange = listingBookable && !overlapBorrow && !overlapRental;
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("itemId", item.getId());
+        response.put("listingStatus", item.getAvailabilityStatus().name());
+        response.put("requestedStartDate", startDateStr);
+        response.put("requestedEndDate", endDateStr);
+        response.put("availableForRequestedDates", availableForRange);
+        response.put("reservedDateRanges", reservedRanges);
+        return response;
+    }
+
     private void updateLedgerStatus(SharingType type, Long refId, String status, Instant completedAt, Boolean returnedOnTime) {
         transactionRecordRepository.findByTransactionTypeAndReferenceId(type, refId).ifPresent(tx -> {
             tx.setStatus(status);
@@ -972,8 +1491,8 @@ public class SharingWorkflowService {
             if (returnedOnTime != null) {
                 tx.setReturnedOnTime(returnedOnTime);
             }
-            if (type == SharingType.RENT && ("APPROVED".equals(status) || "ACTIVE".equals(status) || "COMPLETED".equals(status))) {
-                tx.setPaymentStatus(PaymentStatus.PAID_SIMULATED);
+            if (type == SharingType.RENT && "REJECTED".equals(status) && tx.getPaymentStatus() == PaymentStatus.PAID_SIMULATED) {
+                tx.setPaymentStatus(PaymentStatus.REFUNDED_SIMULATED);
             }
             transactionRecordRepository.save(tx);
         });

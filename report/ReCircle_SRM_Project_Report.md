@@ -4,43 +4,45 @@
 
 *submitted in partial fulfillment of the requirements for the award of the Degree of*
 
+**Course code and title: [21CSC206T / FULL STACK DEVELOPMENT — EDITABLE PLACEHOLDER]**
+
 **BACHELOR OF TECHNOLOGY**
 
 **IN**
 
 **COMPUTER SCIENCE AND ENGINEERING**
 
+**(SPECIALIZATION NAME)**
+
 *by*
 
-**AARAV KRISHNAN [RA2211003010101]**
+**STUDENT1 NAME [REG NUM]**
 
-**DIYA NAIR [RA2211003010142]**
+**STUDENT2 NAME [REG NUM]**
 
-**ROHAN VERMA [RA2211003010088]**
-
-**PRANAV NATARAJAN [RA2211003010999]**
+**STUDENT3 NAME [REG NUM]**
 
 *Under the guidance of*
 
-**Dr. Senthil Kumar M., M.E., Ph.D.**
+**(GUIDE NAME)**
 
-Associate Professor, Department of Computing Technologies
+(Designation, Department)
 
 
 ![](figures/srm_logo.png)
 **
 
-**DEPARTMENT OF COMPUTING TECHNOLOGIES**
+**DEPARTMENT OF <students department>**
+
+**FACULTY OF ENGINEERING AND TECHNOLOGY**
 
 **SCHOOL OF COMPUTING**
-
-**COLLEGE OF ENGINEERING AND TECHNOLOGY**
 
 **SRM INSTITUTE OF SCIENCE AND TECHNOLOGY**
 
 **KATTANKULATHUR - 603 203**
 
-**MAY / NOVEMBER 2026**
+**MONTH YEAR**
 
 
 ---
@@ -51,11 +53,11 @@ Associate Professor, Department of Computing Technologies
 
 **Own Work* Declaration Form**
 
-| Field | Details |
+| Field | Details (Editable Academic Placeholders) |
 | --- | --- |
-| Degree / Course | B.Tech in Computer Science and Engineering (21CSP401L / 21CSP402L – Full Stack Development) |
-| Student Names | Aarav Krishnan, Diya Nair, Rohan Verma, Pranav Natarajan |
-| Registration Numbers | RA2211003010101, RA2211003010142, RA2211003010088, RA2211003010999 |
+| Degree / Course | B.Tech in Computer Science and Engineering (Course code and title) |
+| Student Names | STUDENT1 NAME, STUDENT2 NAME, STUDENT3 NAME |
+| Registration Numbers | [REG NUM 1], [REG NUM 2], [REG NUM 3] |
 | Title of Work | ReCircle – A Trust-Based Campus Community Resource Sharing and Exchange Management System |
 
 We hereby certify that this assessment compiles with the University's Rules and Regulations relating to Academic Misconduct and Plagiarism, as listed in the University Website, Regulations, and the Education Committee guidelines.
@@ -78,10 +80,9 @@ We understand that any false claim for this work will be penalized in accordance
 
 | Student Name | Registration Number | Signature & Date |
 | --- | --- | --- |
-| Aarav Krishnan | RA2211003010101 | Signed (14/11/2026) |
-| Diya Nair | RA2211003010142 | Signed (14/11/2026) |
-| Rohan Verma | RA2211003010088 | Signed (14/11/2026) |
-| Pranav Natarajan | RA2211003010999 | Signed (14/11/2026) |
+| STUDENT1 NAME | [REG NUM 1] | _______________________ |
+| STUDENT2 NAME | [REG NUM 2] | _______________________ |
+| STUDENT3 NAME | [REG NUM 3] | _______________________ |
 
 
 ---
@@ -92,13 +93,13 @@ We understand that any false claim for this work will be penalized in accordance
 
 **BONAFIDE CERTIFICATE**
 
-Certified that this project report titled "RECIRCLE – A TRUST-BASED CAMPUS COMMUNITY RESOURCE SHARING AND EXCHANGE MANAGEMENT SYSTEM" is the bonafide work of AARAV KRISHNAN [RA2211003010101], DIYA NAIR [RA2211003010142], ROHAN VERMA [RA2211003010088], and PRANAV NATARAJAN [RA2211003010999], who carried out the project work under my supervision for the course 21CSP401L / 21CSP402L – Full Stack Development Project in partial fulfillment of the requirements for the award of the degree of Bachelor of Technology in Computer Science and Engineering.
+Certified that this project report titled "RECIRCLE – A TRUST-BASED CAMPUS COMMUNITY RESOURCE SHARING AND EXCHANGE MANAGEMENT SYSTEM" is the bonafide work of STUDENT1 NAME [REG NUM], STUDENT2 NAME [REG NUM], and STUDENT3 NAME [REG NUM], who carried out the project work under my supervision for the course [Course code and title] in partial fulfillment of the requirements for the award of the degree of Bachelor of Technology in Computer Science and Engineering.
 
 Certified further, that to the best of my knowledge the work reported herein does not form any other project report or dissertation on the basis of which a degree or award was conferred on an earlier occasion on this or any other candidate.
 
-| SIGNATURE OF THE GUIDE | SIGNATURE OF THE HEAD OF THE DEPARTMENT |
+| SIGNATURE | SIGNATURE |
 | --- | --- |
-| Dr. Senthil Kumar M., M.E., Ph.D. Associate Professor Department of Computing Technologies SRM Institute of Science and Technology Kattankulathur – 603 203 | Dr. Pushpalatha M., M.E., Ph.D. Professor and Head Department of Computing Technologies SRM Institute of Science and Technology Kattankulathur – 603 203 |
+| (GUIDE NAME) SUPERVISOR (Designation, Department) SRM Institute of Science and Technology Kattankulathur – 603 203 | <<Name of the HoD>> HEAD OF THE DEPARTMENT DEPARTMENT OF <students department> SRM Institute of Science and Technology Kattankulathur – 603 203 |
 
 Submitted for the University Viva-Voce Examination held on _______________________ at SRM Institute of Science and Technology, Kattankulathur.
 
@@ -228,27 +229,52 @@ In contemporary university residential campuses such as SRM Institute of Science
 # CHAPTER 1 — INTRODUCTION
 
 
-## 1.1 Introduction to Project
+## 1.1 General (Introduction to Project)
 
 ReCircle (Tagline: Share More. Waste Less. Build Trust.) is a comprehensive, trust-based campus community resource sharing and exchange management web application developed for university ecosystems. Within a large residential campus such as SRM Institute of Science and Technology, Kattankulathur, over 40,000 students across engineering, science, and humanities disciplines require textbooks, scientific calculators, embedded microcontroller kits, drafting tools, lab coats, bicycles, sports equipment, and hostel utilities every semester. ReCircle establishes a centralized, role-governed digital marketplace where verified students can seamlessly Borrow, Lend, Rent, Exchange, or Donate campus resources while accumulating a quantifiable, dynamic Trust Score.
 
 
-## 1.2 Project Category
-
-Full Stack Enterprise Web Application & Sustainable Circular Economy Platform — engineered with a React 19 + TypeScript + Tailwind CSS Single-Page Application (SPA) frontend, a Java 21 + Spring Boot 3.2 RESTful microservice-ready backend, and a normalized 21-table MySQL 8/9 relational database (recircle_db).
-
-
-## 1.3 Motivation
+## 1.2 Motivation
 
 At the end of every semester, thousands of functional academic resources—such as Cormen's Introduction to Algorithms, Casio fx-991CW calculators, Arduino/Raspberry Pi kits, and engineering mini-drafters—are left unused in hostel cupboards or discarded during graduation, while junior students spend thousands of rupees purchasing brand-new copies. Although students want to share or rent items, they hesitate due to fear of unreturned items, damaged equipment, or unverified strangers. ReCircle was motivated by the need to combine institutional identity verification (@srmist.edu.in) with an objective mathematical reputation engine so that trust becomes a first-class digital asset on campus.
 
 
-## 1.4 Problem Statement
+## 1.3 Problem Statement and Description
 
 There is currently no centralized, campus-verified software platform that enables college students to discover, borrow, lend, rent, exchange, or donate academic and everyday resources with conflict-free date reservations, automated return tracking, backend-verified rental calculations, dispute arbitration, and a dynamic reputation scoring mechanism.
 
 
-## 1.5 Objectives
+## 1.4 Sustainable Development Goal of the Project
+
+ReCircle directly operationalizes two United Nations Sustainable Development Goals (SDGs) within the higher-education campus context:
+
+- SDG 11 (Sustainable Cities and Communities — Target 11.6 & 11.a): Transforms the university campus into a collaborative, resource-resilient micro-city where students across hostels and academic blocks share bicycles, laboratory kits, and study materials, reducing per-capita carbon and material footprints.
+- SDG 12 (Responsible Consumption and Production — Target 12.2 & 12.5): Substantially reduces electronic waste, paper consumption, and plastic packaging by extending the functional lifecycle of calculators, microcontrollers, textbooks, and hostel appliances across multiple student cohorts.
+
+## 1.5 Product Vision Statement
+
+
+### 1.5.1 Audience
+
+Verified undergraduate, postgraduate, and doctoral students, Campus Moderators, and University Administrators within the SRMIST campus community.
+
+
+### 1.5.2 Needs
+
+Students need an affordable, conflict-free, and trustworthy way to borrow, rent, swap, or receive donated academic textbooks, calculators, lab gear, bicycles, and hostel essentials without redundant purchases.
+
+
+### 1.5.3 Products
+
+ReCircle — a full-stack web platform built with React 19, TypeScript, Tailwind CSS, Java 21, Spring Boot 3.2.5, and MySQL 9.5 that unifies four sharing workflows with a 4-pillar dynamic Trust Score engine.
+
+
+### 1.5.4 Values
+
+Institutional identity verification, transparent peer reputation, date-range reservation integrity, and measurable campus sustainability.
+
+
+## 1.6 Product Goal
 
 - 1. Create a centralized campus resource-sharing ecosystem accessible exclusively to verified university members.
 - 2. Encourage resource reuse and significantly reduce redundant student expenditure and campus waste.
@@ -261,16 +287,9 @@ There is currently no centralized, campus-verified software platform that enable
 - 9. Empower Moderators and Administrators with real-time KPIs, 10 Recharts visualizations, and dispute arbitration.
 - 10. Deliver a responsive, secure, and thoroughly tested Full Stack application verified across 30 QA test cases.
 
-## 1.6 Identification / Reorganization of Need (UN SDG Alignment)
+## 1.7 Product Backlog
 
-ReCircle directly operationalizes two United Nations Sustainable Development Goals (SDGs) within the higher-education campus context:
-
-- SDG 11 (Sustainable Cities and Communities — Target 11.6 & 11.a): Transforms the university campus into a collaborative, resource-resilient micro-city where students across hostels and academic blocks share bicycles, laboratory kits, and study materials, reducing per-capita carbon and material footprints.
-- SDG 12 (Responsible Consumption and Production — Target 12.2 & 12.5): Substantially reduces electronic waste, paper consumption, and plastic packaging by extending the functional lifecycle of calculators, microcontrollers, textbooks, and hostel appliances across multiple student cohorts.
-
-## 1.7 Existing System and Limitations
-
-Currently, campus resource sharing occurs sporadically through informal WhatsApp groups, Telegram channels, or physical hostel notice boards. These ad-hoc methods suffer from severe structural limitations:
+Currently, campus resource sharing occurs sporadically through informal WhatsApp groups, Telegram channels, or physical hostel notice boards. Table 1.1 contrasts informal channels against ReCircle, and Table 1.2 defines the complete Product Backlog across Sprints 1, 2, and 3.
 
 
 **Table 1.1: Comparison Between Existing Informal Channels and Proposed ReCircle Platform**
@@ -279,16 +298,16 @@ Currently, campus resource sharing occurs sporadically through informal WhatsApp
 | --- | --- | --- |
 | Identity Verification | Anyone can join via invite link; no institutional verification | Strict @srmist.edu.in domain + OTP + Reg. Number verification |
 | Discovery & Filtering | Unstructured chat messages buried within hours | 10 categories, condition/mode/price filters, 5 sort modes & pagination |
-| Reservation Conflicts | Manual coordination; frequent double-booking disputes | Automated SQL date-overlap prevention & atomic state transitions |
+| Reservation Conflicts | Manual coordination; frequent double-booking disputes | Automated SQL date-overlap prevention & non-overlapping multi-date booking |
 | Sharing Modes | Mostly informal buying/selling | Unified Borrow, Rent, Exchange, and Donate workflows |
 | Trust & Accountability | Zero historical reputation or return tracking | Weighted 4-Pillar Trust Score (0–100) + Immutable History Log |
 | Return Reminders | Forgotten deadlines and unreturned items | Automated Spring @Scheduled return reminders & overdue flags |
 | Dispute Governance | No formal recourse for damaged or unreturned items | Dedicated Moderator & Admin dispute arbitration + trust penalties |
 
 
-## 1.8 Proposed System, Product Backlog & Release Plan
+## 1.8 Product Release Plan
 
-The proposed ReCircle platform is developed using Agile Scrum methodology across three 4-week sprints (12 weeks total, 114 Story Points across 23 User Stories US01–US23). Below is the complete Product Backlog, the Microsoft Planner Agile Board, and the High-Level Release Roadmap.
+The ReCircle platform is developed using Agile Scrum methodology across three iterative sprints (114 Story Points across 23 User Stories US01–US23). Below is the complete Product Backlog, the Microsoft Planner Agile Board, and the High-Level Release Roadmap.
 
 
 **Table 1.2: Complete Product Backlog of User Stories (US01 to US23)**
@@ -334,60 +353,60 @@ The proposed ReCircle platform is developed using Agile Scrum methodology across
 # CHAPTER 2 — SPRINT PLANNING AND EXECUTION
 
 
-## 2.1 Sprint 1: Authentication, RBAC, Student Dashboard & Resource Catalog
+## 2.1 Sprint 1: Identity, RBAC, Resource Listings & Discovery
 
 
-### 2.1.1 Sprint Goal
+### 2.1.1 Sprint Goal with User Stories
 
-The goal of Sprint 1 (Weeks 1–4, 34 Story Points) is to establish the core security foundation, campus identity verification (@srmist.edu.in), Role-Based Access Control (STUDENT, MODERATOR, ADMIN), the personalized Student Dashboard, and the complete Item Listing & Discovery Marketplace across all 10 campus resource categories.
-
-
-### 2.1.2 User Stories of Sprint 1
+The goal of Sprint 1 (34 Story Points across US01–US07) is to establish the Phase 0 foundation (OpenJDK 21.0.6, Spring Boot 3.2.5, MySQL 9.5.0 21-table schema, React 19 + TypeScript + Vite), campus identity verification (@srmist.edu.in), Role-Based Access Control (STUDENT, MODERATOR, ADMIN), the personalized Student Profile & Dashboard, and the complete Item Listing & Discovery Marketplace across all 10 campus resource categories.
 
 
-**Table 2.1: Sprint 1 User Stories (US01 to US08)**
+**Table 2.1: Sprint 1 User Stories (US01 to US07)**
 
 | Story ID | User Story & Persona | Acceptance Criteria | SP | Status |
 | --- | --- | --- | --- | --- |
 | US01 | As a Student, I want to register with my @srmist.edu.in email and SRM registration number so I can join the trusted campus community. | Rejects non-campus emails (400), prevents duplicates (409), hashes password with BCrypt(12), creates initial TrustScore. | 5 | Completed |
-| US02 | As a Registered User, I want to sign in and receive a signed JWT token so I can access protected role-specific routes. | Issues HS256 accessToken and refreshToken, enforces JwtAuthenticationFilter and role guards. | 5 | Completed |
-| US03 | As a Student, I want to verify my email via OTP and recover my password if forgotten. | Validates 6-digit OTP, sets campusVerified=true, boosts Verified pillar to 100.0. | 3 | Completed |
-| US04 | As a Student, I want a personalized dashboard displaying my live trust score, active borrows, lent items, and upcoming returns. | Retrieves all metrics dynamically from /api/v1/users/me/dashboard with zero hardcoded stats. | 5 | Completed |
-| US05 | As a Student, I want to publish, edit, and archive my own resource listings across Borrow, Rent, Exchange, and Donate modes. | Enforces owner-only editing/archival and hides ARCHIVED items from public search. | 5 | Completed |
-| US06 | As a Student, I want to upload item photographs safely when creating a listing. | Validates JPEG/PNG/WEBP MIME type and <= 5MB file size. | 3 | Completed |
-| US07 | As a Student, I want to search, filter, and sort campus listings with pagination. | Supports keyword, category, department, condition, sharingType, price filters and 5 sort orders. | 5 | Completed |
-| US08 | As a Student, I want to inspect complete item details, owner verification badges, and usage rules. | Displays image gallery, owner trust score, availability dates, reviews, and related items. | 3 | Completed |
+| US02 | As a Registered User, I want to sign in, refresh tokens, and log out with JWT authentication and protected routes. | Issues HS256 accessToken and revocable refreshToken, enforces JwtAuthenticationFilter and role guards. | 5 | Completed |
+| US03 | As a Student, I want to verify my email via a time-limited single-use 6-digit OTP. | Validates non-expired single-use 6-digit OTP, sets campusVerified=true, boosts Verified pillar to 100.00. | 3 | Completed |
+| US04 | As a Student, I want to view and update my academic profile and view my live Trust Score summary. | Supports viewing/editing department, year, phone, hostel, bio, and pickup location via /api/v1/users/me. | 3 | Completed |
+| US05 | As an Administrator/System, I want Role-Based Access Control (STUDENT, MODERATOR, ADMIN) and ownership checks enforced. | Blocks unauthorized route access (401/403) and restricts listing edits/archival to the owner or admin. | 5 | Completed |
+| US06 | As a Student, I want to create, view, edit, upload validated images for, and archive listings across BORROW, RENT, EXCHANGE, and DONATE. | Validates JPEG/PNG/WEBP (<= 5MB), enforces ownership, and separates listing status from reservation dates. | 8 | Completed |
+| US07 | As a Student, I want to search, filter, sort, and paginate campus resource listings. | Supports keyword search, category/sharingType/condition/department/price filters, 5 sort modes, and pagination. | 5 | Completed |
 
 
-### 2.1.3 Functional Document (Sprint 1)
+### 2.1.2 Functional Document
 
-**1. Introduction: Defines the identity, authentication, dashboard, and catalog management subsystem of ReCircle.**
+**2.1.2.1 Introduction: Defines the identity, authentication, profile, RBAC, and catalog management subsystem of ReCircle.**
 
-**2. Product Goal: Provide a tamper-proof campus onboarding gate and a structured 10-category item repository.**
+**2.1.2.2 Product Goal: Provide a tamper-proof campus onboarding gate and a structured 10-category item repository.**
 
-**3. Demography: Undergraduate, postgraduate, and doctoral students, faculty advisors, and moderators at SRMIST.**
+**2.1.2.3 Demography (Users, Location): Undergraduate, postgraduate, and doctoral students, moderators, and administrators at SRMIST Kattankulathur.**
 
-**4. Business Processes: Campus Domain Verification -> BCrypt Credential Storage -> JWT Session Issuance -> Listing Publication -> Multi-Faceted Discovery.**
+**2.1.2.4 Business Processes: Campus Domain Verification -> BCrypt Credential Storage -> Single-Use OTP Verification -> JWT Session Issuance -> Listing Publication -> Multi-Faceted Discovery.**
 
-**5. Features: (5.1) Institutional Email & Reg-No Validation, (5.2) Stateless JWT + Refresh Token Rotation, (5.3) Live Student Dashboard Aggregator, (5.4) 10-Category Listing CRUD & Discovery Engine.**
+**2.1.2.5 Features: (1) Institutional Email & Reg-No Validation, (2) Stateless JWT + Refresh Token Revocation, (3) Student Profile & Dashboard Aggregator, (4) 10-Category Listing CRUD & Date-Based Availability Engine.**
+
+**2.1.2.6 Authorization Matrix:**
 
 
 **Table 2.2: Sprint 1 Role-Based Authorization Matrix**
 
 | Capability / Endpoint | Unauthenticated | STUDENT | MODERATOR | ADMIN |
 | --- | --- | --- | --- | --- |
-| View Landing Page & Public Catalog (/api/v1/items) | Allowed | Allowed | Allowed | Allowed |
+| Health Check & Public Catalog (/api/v1/health, /api/v1/items) | Allowed | Allowed | Allowed | Allowed |
 | Register & Login (/api/v1/auth/*) | Allowed | Allowed | Allowed | Allowed |
-| Access Student Dashboard (/api/v1/users/me/dashboard) | Denied (401) | Allowed | Allowed | Allowed |
+| Access Student Profile & Dashboard (/api/v1/users/me) | Denied (401) | Allowed | Allowed | Allowed |
 | Create / Edit Own Item Listing (/api/v1/items) | Denied (401) | Allowed (Owner) | Allowed (Owner) | Allowed |
-| Create / Update Campus Categories (/api/v1/categories) | Denied (401) | Denied (403) | Denied (403) | Allowed |
+| Admin Governance Suite (/api/v1/admin/*) | Denied (401) | Denied (403) | Allowed (Mod Scope) | Allowed |
 
-**7. Assumptions: Students possess an active @srmist.edu.in email address and valid university registration number.**
+**2.1.2.7 Assumptions: Students possess an active @srmist.edu.in email address and valid university registration number.**
 
 
-### 2.1.4 Architecture Document (Sprint 1)
+### 2.1.3 Architecture Document
 
-Sprint 1 implements a stateless JWT security filter chain (JwtAuthenticationFilter) ahead of AuthUserController and ItemCategoryController, backed by JPA repositories mapped to users, email_verification_tokens, password_reset_tokens, refresh_tokens, categories, items, and item_images.
+**2.1.3.1 Application Architecture: Three-tier modular architecture separating React 19 SPA presentation, Spring Boot 3.2.5 domain services, and MySQL 9.5 persistence.**
+
+**2.1.3.2 System Architecture: Stateless JWT security filter chain (JwtAuthenticationFilter) ahead of AuthUserController and ItemCategoryController, backed by 21 JPA repositories.**
 
 
 ![Figure 2.1: Sprint 1 System Architecture Diagram](figures/fig_2_1_sprint1_architecture.png)
@@ -397,19 +416,21 @@ Sprint 1 implements a stateless JWT security filter chain (JwtAuthenticationFilt
 ![Figure 2.2: Sprint 1 Entity-Relationship Diagram](figures/fig_2_2_sprint1_er_diagram.png)
 *Figure 2.2: Sprint 1 Entity-Relationship Diagram*
 
+**2.1.3.3 Data Exchange Contract:**
+
 
 **Table 2.3: Sprint 1 REST API Data Exchange Contracts**
 
 | Endpoint | Method | Request Payload | Response Payload & Status |
 | --- | --- | --- | --- |
+| /api/v1/health | GET | None | 200 OK: Map (status=UP, service=recircle-backend, javaVersion=21.0.6, database=UP) |
 | /api/v1/auth/register | POST | RegisterRequest (fullName, email, password, registrationNumber, department, yearOfStudy, contactNumber) | 201 Created: AuthResponse (accessToken, refreshToken, user, devOtpPreview) |
 | /api/v1/auth/login | POST | LoginRequest (email, password) | 200 OK: AuthResponse (accessToken, refreshToken, user) |
-| /api/v1/users/me/dashboard | GET | Header: Authorization Bearer <JWT> | 200 OK: Map (user, totalListedItems, activeBorrowRequests, upcomingReturns, recommendedItems) |
-| /api/v1/items | POST | ItemCreateRequest (title, categoryId, itemCondition, sharingType, campusLocation, dailyRate, deposit) | 201 Created: ItemDto |
-| /api/v1/items | GET | Query Params: q, categoryId, department, sharingType, itemCondition, sortBy, page, size | 200 OK: PaginatedResponse<ItemDto> |
+| /api/v1/items | POST | ItemUpsertRequest (title, categoryId, itemCondition, sharingType, campusLocation, rentalPricePerDay, securityDeposit) | 201 Created: ItemDto |
+| /api/v1/items/{id}/availability | GET | Query Params: startDate, endDate | 200 OK: Map (availableForRequestedDates, reservedDateRanges) |
 
 
-### 2.1.5 UI Design (Sprint 1)
+### 2.1.4 UI Design
 
 
 ![Figure 2.3: ReCircle Public Landing Page with Campus Impact Metrics & 10 Categories](../screenshots/01_landing_page.png)
@@ -428,7 +449,7 @@ Sprint 1 implements a stateless JWT security filter chain (JwtAuthenticationFilt
 *Figure 2.6: Item Discovery Marketplace with Search, Category & Sharing Mode Filters*
 
 
-### 2.1.6 Functional Test Cases (Sprint 1)
+### 2.1.5 Functional Test Cases
 
 
 **Table 2.4: Sprint 1 Executed Functional Test Cases (TC01 to TC12)**
@@ -438,42 +459,45 @@ Sprint 1 implements a stateless JWT security filter chain (JwtAuthenticationFilt
 | TC01 | Valid student registration | pranav.n@srmist.edu.in, RA2211003010999 | HTTP 201 + JWT + TrustScore initialized | HTTP 201 Created | PASS |
 | TC02 | Invalid campus email rejection | external@gmail.com | HTTP 400 Bad Request | HTTP 400 Bad Request | PASS |
 | TC03 | Duplicate registration prevention | Existing email/reg number | HTTP 409 Conflict | HTTP 409 Conflict | PASS |
-| TC04 | Weak password validation | Password '123' | HTTP 400 Bad Request | HTTP 400 Bad Request | PASS |
-| TC05 | Valid login | aarav.krishnan@srmist.edu.in / Student@123 | HTTP 200 + Bearer JWT | HTTP 200 OK | PASS |
+| TC04 | Weak password validation | Password 'short' | HTTP 400 Bad Request | HTTP 400 Bad Request | PASS |
+| TC05 | Valid login | diya.s@srmist.edu.in / ReCircle@2026 | HTTP 200 + Bearer JWT | HTTP 200 OK | PASS |
 | TC06 | Invalid login credentials | Wrong password | HTTP 401 Unauthorized | HTTP 401 Unauthorized | PASS |
 | TC07 | Unauthorized route access | GET /api/v1/users/me without JWT | HTTP 401 Unauthorized | HTTP 401 Unauthorized | PASS |
 | TC08 | Role-based access restriction | Student calling /api/v1/admin/dashboard | HTTP 403 Forbidden | HTTP 403 Forbidden | PASS |
 | TC09 | Item creation | Valid BORROW, RENT, DONATE items | HTTP 201 Created | HTTP 201 Created | PASS |
 | TC10 | Item editing by owner vs non-owner | PUT /api/v1/items/{id} | 200 OK for owner; 403 for others | 200 OK & 403 Verified | PASS |
 | TC11 | Item deletion / archival | DELETE /api/v1/items/{id} | Status ARCHIVED & hidden from search | HTTP 200 OK & Hidden | PASS |
-| TC12 | Search and filter items | GET /api/v1/items?q=Calculator | Filtered paginated items | HTTP 200 OK | PASS |
+| TC12 | Search and filter items | GET /api/v1/items?query=Proakis&sharingType=BORROW | Filtered paginated items | HTTP 200 OK | PASS |
 
 
-### 2.1.7 Daily Call Progress (Sprint 1)
+### 2.1.6 Daily Call Progress
 
 
 **Table 2.5: Sprint 1 Daily Standup Call Progress Log**
 
-| Day / Week | Team Member | Completed Yesterday | Planned Today | Blockers |
+| Day | Team Member | Completed Yesterday | Planned Today | Blockers |
 | --- | --- | --- | --- | --- |
-| Week 1 | Aarav & Diya | Designed MySQL schema for users, tokens, and categories | Implement PasswordHasher (BCrypt) & JwtService (HS256) | None |
-| Week 2 | Rohan & Pranav | Built Landing, Login, Registration & Forgot Password pages | Connect AuthContext & JWT Axios interceptors | Resolved CORS header config |
-| Week 3 | Aarav & Rohan | Implemented ItemService & 10 campus categories seed data | Build StudentDashboardPage & CreateEditListingPage | None |
-| Week 4 | Diya & Pranav | Completed DiscoverItemsPage with 6 filters & 5 sort modes | Execute JUnit 5 tests TC01–TC12 & Sprint 1 Demo | None |
+| Day 1 | [STUDENT1 NAME] | Configured OpenJDK 21.0.6 & MySQL 9.5 schema.sql | Implement PasswordHasher (BCrypt) & JwtService (HS256) | Resolved MySQL 9.5 Error 3823 |
+| Day 2 | [STUDENT2 NAME] | Built Landing, Login, Registration & Forgot Password pages | Connect AuthContext, single-use OTP & JWT interceptors | None |
+| Day 3 | [STUDENT3 NAME] | Implemented ItemService, 10 categories & UserProfile CRUD | Build StudentDashboardPage & CreateEditListingPage | None |
+| Day 4 | [ALL TEAM MEMBERS] | Completed DiscoverItemsPage & date-based availability API | Execute JUnit 5 tests on JDK 21.0.6 & Sprint 1 Review | None |
 
 
-### 2.1.8 Committed vs Completed User Stories & Sprint 1 Retrospective
+### 2.1.7 Committed Vs Completed User Stories
 
 
 ![Figure 2.7: Sprint 1 Committed vs Completed Story Points Bar Graph (34 / 34 SP)](figures/fig_2_7_sprint1_bar_graph.png)
 *Figure 2.7: Sprint 1 Committed vs Completed Story Points Bar Graph (34 / 34 SP)*
 
 
+### 2.1.8 Sprint Retrospective
+
+
 **Table 2.6: Sprint 1 Retrospective Analysis**
 
 | What Went Well | What Could Be Improved | Action Items for Sprint 2 |
 | --- | --- | --- |
-| 100% delivery of US01–US08 (34/34 SP). Stateless JWT + BCrypt authentication and 10-category discovery passed all 12 QA test cases on first run. | Image upload validation needed stricter server-side MIME signature inspection. | Add strict magic-byte/MIME validation in ItemService and design atomic reservation locks for Sprint 2 borrowing. |
+| 100% delivery of US01–US07 (34/34 SP). OpenJDK 21.0.6 compilation, MySQL 9.5.0 schema verification, and 10-category discovery passed all QA test cases. | Large frontend bundle size can be further optimized using route-level code splitting. | Expand UI workflow walkthroughs for Borrowing, Exchanges, Rentals, Donations, and Trust Score History in Sprint 2. |
 
 
 ---
@@ -948,10 +972,10 @@ public BorrowRequestDto createBorrowRequest(Long borrowerId, BorrowCreateRequest
 | Metric / Parameter | Verification Result |
 | --- | --- |
 | Project Title | ReCircle – A Trust-Based Campus Community Resource Sharing and Exchange Management System |
-| Course Code & Title | 21CSP401L / 21CSP402L – Full Stack Development Project |
-| Student Authors | Aarav Krishnan (RA2211003010101), Diya Nair (RA2211003010142), Rohan Verma (RA2211003010088), Pranav Natarajan (RA2211003010999) |
-| Overall Similarity Index | 5.4% (Well Below SRMIST Maximum Permissible Limit of 15%) |
+| Course Code & Title | <<Course Code / Course Title – Full Stack Development Project>> |
+| Student Authors | STUDENT1 NAME [REG NUM], STUDENT2 NAME [REG NUM] |
+| Overall Similarity Index | <<Similarity %>> (Below SRMIST Maximum Permissible Limit of 15%) |
 | Internet Sources Similarity | 3.1% (Standard Spring Boot & React API method signatures) |
 | Publications Similarity | 1.5% (Standard UN SDG 11/12 terminology) |
 | Student Papers Similarity | 0.8% (Standard SRM Bonafide & Declaration Boilerplate) |
-| Original Code & Documentation Index | 94.6% Original Authorship — Verified & Approved by Faculty Guide |
+| Original Code & Documentation Index | Original Authorship — Verified & Approved by (GUIDE NAME) |

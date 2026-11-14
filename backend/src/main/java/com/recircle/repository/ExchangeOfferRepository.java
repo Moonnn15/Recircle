@@ -23,4 +23,16 @@ public interface ExchangeOfferRepository extends JpaRepository<ExchangeOffer, Lo
         @Param("activeStatuses") List<ExchangeStatus> activeStatuses,
         @Param("excludeId") Long excludeId
     );
+
+    @Query("""
+        SELECT e FROM ExchangeOffer e
+        WHERE (e.requestedItem.id IN (:item1Id, :item2Id) OR e.offeredItem.id IN (:item1Id, :item2Id))
+          AND e.status = com.recircle.enums.ExchangeStatus.PENDING
+          AND (:excludeId IS NULL OR e.id <> :excludeId)
+    """)
+    List<ExchangeOffer> findCompetingPendingExchanges(
+        @Param("item1Id") Long item1Id,
+        @Param("item2Id") Long item2Id,
+        @Param("excludeId") Long excludeId
+    );
 }

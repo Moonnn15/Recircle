@@ -42,6 +42,12 @@ public class SharingWorkflowController {
         return ResponseEntity.ok(sharingWorkflowService.getReceivedBorrowRequests(p.getUserId()));
     }
 
+    @GetMapping("/borrow-requests/{id}")
+    public ResponseEntity<BorrowRequestDto> getBorrowRequestById(@PathVariable Long id) {
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.getBorrowRequestById(id, p.getUserId()));
+    }
+
     @PutMapping("/borrow-requests/{id}/approve")
     public ResponseEntity<BorrowRequestDto> approveBorrow(
         @PathVariable Long id,
@@ -106,8 +112,8 @@ public class SharingWorkflowController {
 
     @GetMapping("/exchanges/{id}")
     public ResponseEntity<ExchangeOfferDto> getExchangeById(@PathVariable Long id) {
-        AuthContext.requireAuth();
-        return ResponseEntity.ok(sharingWorkflowService.getExchangeById(id));
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.getExchangeById(id, p.getUserId()));
     }
 
     @PutMapping("/exchanges/{id}/accept")
@@ -120,6 +126,12 @@ public class SharingWorkflowController {
     public ResponseEntity<ExchangeOfferDto> rejectExchange(@PathVariable Long id) {
         AuthPrincipal p = AuthContext.requireAuth();
         return ResponseEntity.ok(sharingWorkflowService.rejectExchangeOffer(id, p.getUserId()));
+    }
+
+    @PutMapping("/exchanges/{id}/cancel")
+    public ResponseEntity<ExchangeOfferDto> cancelExchange(@PathVariable Long id) {
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.cancelExchangeOffer(id, p.getUserId()));
     }
 
     @PutMapping("/exchanges/{id}/confirm-handover")
@@ -135,6 +147,22 @@ public class SharingWorkflowController {
     }
 
     // --- Rentals ---
+
+    @PostMapping("/rentals/calculate")
+    public ResponseEntity<RentalCalculationDto> calculateRentalPost(@RequestBody RentalCalculateRequest req) {
+        return ResponseEntity.ok(sharingWorkflowService.calculateRentalQuote(req));
+    }
+
+    @GetMapping("/rentals/calculate")
+    public ResponseEntity<RentalCalculationDto> calculateRentalGet(
+        @RequestParam Long itemId,
+        @RequestParam String startDate,
+        @RequestParam String endDate
+    ) {
+        return ResponseEntity.ok(sharingWorkflowService.calculateRentalQuote(
+            new RentalCalculateRequest(itemId, startDate, endDate)
+        ));
+    }
 
     @PostMapping("/rentals")
     public ResponseEntity<RentalDto> createRental(@RequestBody RentalCreateRequest req) {
@@ -152,8 +180,8 @@ public class SharingWorkflowController {
 
     @GetMapping("/rentals/{id}")
     public ResponseEntity<RentalDto> getRentalById(@PathVariable Long id) {
-        AuthContext.requireAuth();
-        return ResponseEntity.ok(sharingWorkflowService.getRentalById(id));
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.getRentalById(id, p.getUserId()));
     }
 
     @PutMapping("/rentals/{id}/approve")
@@ -168,13 +196,19 @@ public class SharingWorkflowController {
         return ResponseEntity.ok(sharingWorkflowService.rejectRental(id, p.getUserId()));
     }
 
-    @PutMapping("/rentals/{id}/confirm-handover")
+    @PutMapping("/rentals/{id}/cancel")
+    public ResponseEntity<RentalDto> cancelRental(@PathVariable Long id) {
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.cancelRental(id, p.getUserId()));
+    }
+
+    @PutMapping({"/rentals/{id}/confirm-handover", "/rentals/{id}/handover"})
     public ResponseEntity<RentalDto> confirmRentalHandover(@PathVariable Long id) {
         AuthPrincipal p = AuthContext.requireAuth();
         return ResponseEntity.ok(sharingWorkflowService.confirmRentalHandover(id, p.getUserId()));
     }
 
-    @PutMapping("/rentals/{id}/confirm-return")
+    @PutMapping({"/rentals/{id}/confirm-return", "/rentals/{id}/complete"})
     public ResponseEntity<RentalDto> confirmRentalReturn(@PathVariable Long id) {
         AuthPrincipal p = AuthContext.requireAuth();
         return ResponseEntity.ok(sharingWorkflowService.confirmRentalReturn(id, p.getUserId()));
@@ -190,10 +224,16 @@ public class SharingWorkflowController {
         );
     }
 
-    @GetMapping("/donations")
+    @GetMapping({"/donations", "/donations/requests"})
     public ResponseEntity<List<DonationRequestDto>> getDonations() {
         AuthPrincipal p = AuthContext.requireAuth();
         return ResponseEntity.ok(sharingWorkflowService.getUserDonationRequests(p.getUserId()));
+    }
+
+    @GetMapping("/donations/requests/{id}")
+    public ResponseEntity<DonationRequestDto> getDonationRequestById(@PathVariable Long id) {
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.getDonationRequestById(id, p.getUserId()));
     }
 
     @PostMapping("/donations/{id}/request")
@@ -217,6 +257,12 @@ public class SharingWorkflowController {
     public ResponseEntity<DonationRequestDto> rejectDonation(@PathVariable Long id) {
         AuthPrincipal p = AuthContext.requireAuth();
         return ResponseEntity.ok(sharingWorkflowService.rejectDonationRequest(id, p.getUserId()));
+    }
+
+    @PutMapping("/donations/requests/{id}/cancel")
+    public ResponseEntity<DonationRequestDto> cancelDonation(@PathVariable Long id) {
+        AuthPrincipal p = AuthContext.requireAuth();
+        return ResponseEntity.ok(sharingWorkflowService.cancelDonationRequest(id, p.getUserId()));
     }
 
     @PutMapping("/donations/requests/{id}/complete")

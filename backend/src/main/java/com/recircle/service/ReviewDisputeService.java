@@ -225,6 +225,10 @@ public class ReviewDisputeService {
         User moderator = userRepository.findById(moderatorId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Moderator not found."));
 
+        if (d.getStatus() == DisputeStatus.RESOLVED || d.getStatus() == DisputeStatus.REJECTED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "DISPUTE_ALREADY_RESOLVED", "This dispute has already been resolved or closed.");
+        }
+
         DisputeStatus newStatus = req.status() != null
             ? DisputeStatus.valueOf(req.status().toUpperCase())
             : DisputeStatus.RESOLVED;
@@ -232,10 +236,22 @@ public class ReviewDisputeService {
         d.setStatus(newStatus);
         d.setAssignedModerator(moderator);
         d.setResolutionNotes(inputValidator.sanitizeText(req.resolutionNotes()));
+        boolean applyPenalty = newStatus == DisputeStatus.RESOLVED && Boolean.TRUE.equals(req.penalizeReportedUser());
+        if (applyPenalty) {
+            d.setPenaltyApplied(true);
+        }
         if (newStatus == DisputeStatus.RESOLVED || newStatus == DisputeStatus.REJECTED) {
             d.setResolvedAt(Instant.now());
         }
         Dispute saved = disputeRepository.save(d);
+
+        if (applyPenalty && d.getReportedUser() != null) {
+            trustScoreService.recalculateTrustScore(
+                d.getReportedUser().getId(),
+                "DISPUTE_PENALTY_APPLIED",
+                "Moderator/Admin resolved Dispute #" + saved.getId() + " with trust penalty (-15.00 pts)."
+            );
+        }
 
         AuditLog log = new AuditLog();
         log.setActorUser(moderator);

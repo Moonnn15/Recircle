@@ -18,9 +18,11 @@ import {
 import {
   BorrowingPage,
   LendingPage,
+  BorrowRequestDetailsPage,
   ExchangeMarketplacePage,
   ExchangeDetailsPage,
   RentalManagementPage,
+  RentalDetailsPage,
   DonationMarketplacePage,
   DonationRequestsPage,
   TransactionHistoryPage,
@@ -42,6 +44,7 @@ import {
   AdminTransactionsPage,
   AdminDisputesPage,
   ModeratorDashboardPage,
+  AdminAuditLogsPage,
 } from './pages/admin/AdminPages';
 import { UserRole } from './types';
 
@@ -165,6 +168,14 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/listings/edit/:id"
+            element={
+              <ProtectedRoute>
+                <CreateEditListingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/my-listings"
             element={
               <ProtectedRoute>
@@ -177,6 +188,22 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <BorrowingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/borrowing/:id"
+            element={
+              <ProtectedRoute>
+                <BorrowRequestDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/borrow-requests/:id"
+            element={
+              <ProtectedRoute>
+                <BorrowRequestDetailsPage />
               </ProtectedRoute>
             }
           />
@@ -213,6 +240,14 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/rentals/:id"
+            element={
+              <ProtectedRoute>
+                <RentalDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/donations"
             element={
               <ProtectedRoute>
@@ -222,6 +257,14 @@ export const App: React.FC = () => {
           />
           <Route
             path="/donation-requests"
+            element={
+              <ProtectedRoute>
+                <DonationRequestsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/donations/requests"
             element={
               <ProtectedRoute>
                 <DonationRequestsPage />
@@ -253,7 +296,23 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/users/:id/trust-score"
+            element={
+              <ProtectedRoute>
+                <TrustScoreDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/reviews"
+            element={
+              <ProtectedRoute>
+                <ReviewsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users/:id/reviews"
             element={
               <ProtectedRoute>
                 <ReviewsPage />
@@ -270,6 +329,22 @@ export const App: React.FC = () => {
           />
           <Route
             path="/disputes"
+            element={
+              <ProtectedRoute>
+                <DisputeReportingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/disputes/new"
+            element={
+              <ProtectedRoute>
+                <DisputeReportingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-disputes"
             element={
               <ProtectedRoute>
                 <DisputeReportingPage />
@@ -294,6 +369,7 @@ export const App: React.FC = () => {
           />
 
           {/* Moderator & Administrator Protected Routes */}
+          <Route path="/moderator" element={<Navigate to="/moderator/dashboard" replace />} />
           <Route
             path="/moderator/dashboard"
             element={
@@ -302,6 +378,15 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/moderator/disputes"
+            element={
+              <ProtectedRoute allowedRoles={['MODERATOR', 'ADMIN']}>
+                <AdminDisputesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route
             path="/admin/dashboard"
             element={
@@ -335,6 +420,14 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/admin/items"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']}>
+                <AdminListingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/transactions"
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']}>
@@ -347,6 +440,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']}>
                 <AdminDisputesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']}>
+                <AdminAuditLogsPage />
               </ProtectedRoute>
             }
           />
