@@ -902,7 +902,7 @@ export const ExchangeMarketplacePage: React.FC = () => {
             Peer-to-Peer Item Exchange Hub
           </h1>
           <p className="text-xs text-[#737B75]">
-            Swap resources directly with fellow students with ascending-ID lock safety and dual handover verification
+            Swap resources directly with fellow community members with ascending-ID lock safety and dual handover verification
           </p>
         </div>
         <button
@@ -1031,7 +1031,7 @@ export const ExchangeMarketplacePage: React.FC = () => {
       {/* Available Exchange Listings */}
       <div className="space-y-4">
         <h2 className="font-display text-lg font-bold text-[#164B3B]">
-          Campus Items Open for Exchange
+          Community Items Open for Exchange
         </h2>
         {loading ? (
           <div className="h-44 bg-white rounded-2xl animate-pulse" />
@@ -1307,7 +1307,7 @@ export const RentalManagementPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[#164B3B]">
-            Campus Rental Management
+            Community Rental Management
           </h1>
           <p className="text-xs text-[#737B75]">
             Server-verified daily rental calculation with transparent payment status tracking (No Live Payment Gateway Integrated)
@@ -1670,10 +1670,10 @@ export const DonationMarketplacePage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-[#164B3B]">
-            Campus Community Donations
+            Community Donations
           </h1>
           <p className="text-xs text-[#737B75]">
-            Zero-cost textbooks, lab coats, and drawing instruments donated by senior students
+            Zero-cost books, tools, supplies, and appliances donated freely by community members
           </p>
         </div>
         <Link
@@ -1894,7 +1894,7 @@ export const TransactionHistoryPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[#164B3B]">
-            Unified Campus Transaction Ledger
+            Unified Community Transaction Ledger
           </h1>
           <p className="text-xs text-[#737B75]">
             Synchronized record of all your BORROW, RENT, EXCHANGE, and DONATE activities

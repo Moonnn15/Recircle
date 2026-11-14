@@ -65,7 +65,7 @@ export const ItemCard: React.FC<{ item: ItemListing }> = ({ item }) => {
           <div className="flex items-center justify-between text-xs">
             <span className="inline-flex items-center gap-1 text-[#737B75] truncate">
               <MapPin className="w-3.5 h-3.5 text-[#238B68] shrink-0" />
-              <span className="truncate">{item.campusLocation}</span>
+              <span className="truncate">{item.location || item.campusLocation}</span>
             </span>
             {item.sharingType === 'RENT' ? (
               <span className="font-display font-bold text-sm text-[#164B3B] shrink-0">
@@ -87,7 +87,7 @@ export const ItemCard: React.FC<{ item: ItemListing }> = ({ item }) => {
               </div>
               <span className="text-xs font-medium text-[#202923] truncate">{item.ownerName}</span>
               {item.ownerVerified && (
-                <ShieldCheck className="w-3.5 h-3.5 text-[#238B68] shrink-0" title="Verified SRM Student" />
+                <ShieldCheck className="w-3.5 h-3.5 text-[#238B68] shrink-0" title="Verified Account Status" />
               )}
             </div>
 

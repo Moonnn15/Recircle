@@ -84,7 +84,7 @@ public class TrustScoreService {
         ts.setTrustLevel(resolveTrustLevel(total));
 
         TrustScore saved = trustScoreRepository.save(ts);
-        recordHistory(user, BigDecimal.ZERO, saved.getTotalScore(), "ACCOUNT_CREATED", "Initial campus trust score initialized.");
+        recordHistory(user, BigDecimal.ZERO, saved.getTotalScore(), "ACCOUNT_CREATED", "Initial community trust score initialized.");
         return saved;
     }
 

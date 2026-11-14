@@ -16,13 +16,24 @@ public class InputValidator {
         Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final List<String> allowedDomains;
+    private final boolean allowPublicEmails;
 
-    public InputValidator(@Value("${recircle.campus.allowed-domains:srmist.edu.in,campus.edu,edu.in}") String domainsCsv) {
+    public InputValidator(
+        @Value("${recircle.campus.allowed-domains:srmist.edu.in,campus.edu,edu.in}") String domainsCsv,
+        @Value("${recircle.auth.allow-public-emails:true}") boolean allowPublicEmails
+    ) {
         this.allowedDomains = Arrays.stream(domainsCsv.split(","))
             .map(String::trim)
             .map(String::toLowerCase)
             .filter(s -> !s.isEmpty())
             .toList();
+        this.allowPublicEmails = allowPublicEmails;
+    }
+
+    public boolean isCampusDomain(String email) {
+        if (email == null || email.isBlank()) return false;
+        String lowerEmail = email.trim().toLowerCase();
+        return allowedDomains.stream().anyMatch(d -> lowerEmail.endsWith("@" + d) || lowerEmail.endsWith("." + d));
     }
 
     public void validateRegistrationInput(
@@ -36,23 +47,21 @@ public class InputValidator {
         String contactNumber
     ) {
         requireNonBlank(fullName, "Full name is required.");
-        requireNonBlank(email, "Campus email is required.");
+        requireNonBlank(email, "Email is required.");
         if (!EMAIL_PATTERN.matcher(email.trim()).matches()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_EMAIL", "Please provide a valid email address.");
         }
-        String lowerEmail = email.trim().toLowerCase();
-        boolean domainAllowed = allowedDomains.stream().anyMatch(d -> lowerEmail.endsWith("@" + d) || lowerEmail.endsWith("." + d));
-        if (!domainAllowed) {
-            throw new ApiException(
-                HttpStatus.BAD_REQUEST,
-                "INVALID_CAMPUS_DOMAIN",
-                "Email must belong to an authorized campus domain (" + String.join(", ", allowedDomains) + ")."
-            );
+        if (!allowPublicEmails) {
+            if (!isCampusDomain(email)) {
+                throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_CAMPUS_DOMAIN",
+                    "Email must belong to an authorized campus domain (" + String.join(", ", allowedDomains) + ")."
+                );
+            }
         }
         validatePassword(password, confirmPassword);
-        requireNonBlank(registrationNumber, "Student registration number is required.");
-        requireNonBlank(department, "Department is required.");
-        if (yearOfStudy == null || yearOfStudy < 1 || yearOfStudy > 6) {
+        if (yearOfStudy != null && (yearOfStudy < 1 || yearOfStudy > 6)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_YEAR", "Year of study must be between 1 and 6.");
         }
         requireNonBlank(contactNumber, "Contact number is required.");

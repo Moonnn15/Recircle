@@ -81,12 +81,15 @@ public class AuthService {
         );
 
         String normalizedEmail = req.email().trim().toLowerCase();
-        String normalizedRegNo = req.registrationNumber().trim().toUpperCase();
+        boolean hasRegNo = req.registrationNumber() != null && !req.registrationNumber().isBlank();
+        String normalizedRegNo = hasRegNo
+            ? req.registrationNumber().trim().toUpperCase()
+            : "COMM-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
 
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_EMAIL", "An account with this campus email already exists.");
+            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_EMAIL", "An account with this email address already exists.");
         }
-        if (userRepository.existsByRegistrationNumberIgnoreCase(normalizedRegNo)) {
+        if (hasRegNo && userRepository.existsByRegistrationNumberIgnoreCase(normalizedRegNo)) {
             throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_REGISTRATION_NUMBER", "An account with this registration number already exists.");
         }
 
@@ -104,12 +107,15 @@ public class AuthService {
 
         UserProfile profile = new UserProfile();
         profile.setUser(user);
-        profile.setDepartment(inputValidator.sanitizeText(req.department()));
-        profile.setYearOfStudy(req.yearOfStudy());
+        String dept = (req.department() != null && !req.department().isBlank())
+            ? inputValidator.sanitizeText(req.department())
+            : "Community Member";
+        profile.setDepartment(dept);
+        profile.setYearOfStudy(req.yearOfStudy() != null ? req.yearOfStudy() : 1);
         profile.setContactNumber(inputValidator.sanitizeText(req.contactNumber()));
-        profile.setHostelOrBlock(inputValidator.sanitizeText(req.hostelOrBlock()));
-        profile.setBio(inputValidator.sanitizeText(req.bio()));
-        profile.setPreferredPickupSpot(inputValidator.sanitizeText(req.preferredPickupSpot()));
+        profile.setHostelOrBlock(req.hostelOrBlock() != null ? inputValidator.sanitizeText(req.hostelOrBlock()) : null);
+        profile.setBio(req.bio() != null ? inputValidator.sanitizeText(req.bio()) : null);
+        profile.setPreferredPickupSpot(req.preferredPickupSpot() != null ? inputValidator.sanitizeText(req.preferredPickupSpot()) : null);
         profile.setAvatarUrl(req.avatarUrl());
         profile.calculateCompletion();
         userProfileRepository.save(profile);
@@ -127,8 +133,8 @@ public class AuthService {
         notificationService.createNotification(
             user,
             "ACCOUNT_VERIFICATION",
-            "Welcome to ReCircle! Verify Your Campus Email",
-            "Your 6-digit campus verification OTP is " + otpCode + ". Verify your account to unlock +15 Trust Score points.",
+            "Welcome to ReCircle! Verify Your Email",
+            "Your 6-digit verification OTP is " + otpCode + ". Verify your account to unlock +15 Trust Score points.",
             "/profile",
             user.getId()
         );
@@ -214,15 +220,15 @@ public class AuthService {
 
         trustScoreService.recalculateTrustScore(
             user.getId(),
-            "CAMPUS_EMAIL_VERIFIED",
-            "Campus email verified (+100 Verified Account Score component)."
+            "EMAIL_VERIFIED",
+            "Account email verified (+100 Verified Account Score component)."
         );
 
         notificationService.createNotification(
             user,
             "ACCOUNT_VERIFIED",
-            "Campus Identity Verified!",
-            "Your SRM campus email has been verified and your Trust Score has been updated.",
+            "Account Identity Verified!",
+            "Your email has been verified and your Trust Score has been updated (+15 pts).",
             "/trust-score",
             user.getId()
         );

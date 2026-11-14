@@ -74,6 +74,8 @@ public class User {
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
     public boolean isCampusVerified() { return campusVerified; }
     public void setCampusVerified(boolean campusVerified) { this.campusVerified = campusVerified; }
+    public boolean isAccountVerified() { return campusVerified; }
+    public void setAccountVerified(boolean accountVerified) { this.campusVerified = accountVerified; }
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
     public Instant getCreatedAt() { return createdAt; }

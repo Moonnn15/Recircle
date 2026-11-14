@@ -39,23 +39,23 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const studentNav: NavEntry[] = [
-    { to: '/dashboard', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { to: '/discover', label: 'Discover Items', icon: <Compass className="w-4 h-4" /> },
+    { to: '/dashboard', label: 'Community Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { to: '/discover', label: 'Explore', icon: <Compass className="w-4 h-4" /> },
+    { to: '/listings/create', label: 'List an Item', icon: <PlusCircle className="w-4 h-4" /> },
     { to: '/my-listings', label: 'My Listings', icon: <Package className="w-4 h-4" /> },
-    { to: '/borrowing', label: 'Borrowing', icon: <Clock className="w-4 h-4" /> },
-    { to: '/lending', label: 'Lending', icon: <ShieldCheck className="w-4 h-4" /> },
+    { to: '/borrowing', label: 'Borrow & Lend', icon: <Clock className="w-4 h-4" /> },
     { to: '/exchanges', label: 'Exchanges', icon: <ArrowLeftRight className="w-4 h-4" /> },
     { to: '/rentals', label: 'Rentals', icon: <Receipt className="w-4 h-4" /> },
     { to: '/donations', label: 'Donations', icon: <HandHeart className="w-4 h-4" /> },
-    { to: '/transactions', label: 'Transactions', icon: <FileText className="w-4 h-4" /> },
-    { to: '/reviews', label: 'Reviews', icon: <Star className="w-4 h-4" /> },
+    { to: '/transactions', label: 'My Transactions', icon: <FileText className="w-4 h-4" /> },
+    { to: '/reviews', label: 'Trust & Reviews', icon: <Star className="w-4 h-4" /> },
     {
       to: '/notifications',
       label: 'Notifications',
       icon: <Bell className="w-4 h-4" />,
       badge: unreadNotifications,
     },
-    { to: '/trust-score', label: 'Trust Score', icon: <Award className="w-4 h-4" /> },
+    { to: '/trust-score', label: 'Trust Score Breakdown', icon: <Award className="w-4 h-4" /> },
     { to: '/disputes', label: 'Disputes & Reports', icon: <AlertTriangle className="w-4 h-4" /> },
     { to: '/profile', label: 'My Profile', icon: <User className="w-4 h-4" /> },
     { to: '/settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
@@ -90,7 +90,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 ReCircle
               </span>
               <span className="text-[11px] text-[#A8C3A0] font-medium">
-                SRM Campus Trust Network
+                Community Trust Sharing Network
               </span>
             </div>
           </Link>
@@ -114,7 +114,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             <div className="mt-2 flex items-center justify-between text-[11px] text-[#E8F2EA]/80">
               <span>Role: {user.role}</span>
               <span className="inline-flex items-center gap-1 text-[#A8C3A0]">
-                {user.campusVerified ? '✓ Verified' : 'Unverified'}
+                {user.campusVerified ? '✓ Verified Status' : 'Unverified'}
               </span>
             </div>
           </div>
@@ -150,7 +150,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           )}
 
           <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#A8C3A0]">
-            Campus Sharing Hub
+            Community Sharing Hub
           </p>
           {studentNav.map((item) => (
             <NavLink
@@ -183,7 +183,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             className="w-full py-2.5 px-4 rounded-xl bg-[#238B68] hover:bg-[#1e7a5a] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
-            Publish Campus Resource
+            List an Item
           </Link>
           <button
             onClick={handleLogout}

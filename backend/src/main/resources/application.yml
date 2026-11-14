@@ -27,6 +27,8 @@ recircle:
     jwt-secret: ${JWT_SECRET:ReCircleCampusTrustSharingSecretKey2026SRMInstituteOfScienceAndTech!}
     jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  auth:
+    allow-public-emails: ${ALLOW_PUBLIC_EMAILS:true}
   campus:
     allowed-domains: ${CAMPUS_ALLOWED_DOMAINS:srmist.edu.in,campus.edu,edu.in}
   storage:

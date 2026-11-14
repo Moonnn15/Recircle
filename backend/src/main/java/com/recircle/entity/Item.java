@@ -48,6 +48,18 @@ public class Item {
     @Column(name = "campus_location", nullable = false, length = 150)
     private String campusLocation;
 
+    @Column(name = "city", length = 100)
+    private String city;
+
+    @Column(name = "neighborhood", length = 100)
+    private String neighborhood;
+
+    @Column(name = "landmark", length = 150)
+    private String landmark;
+
+    @Column(name = "pickup_instructions", length = 300)
+    private String pickupInstructions;
+
     @Column(name = "security_deposit", nullable = false, precision = 10, scale = 2)
     private BigDecimal securityDeposit = BigDecimal.ZERO;
 
@@ -113,6 +125,16 @@ public class Item {
     public void setAvailabilityStatus(ListingStatus availabilityStatus) { this.availabilityStatus = availabilityStatus; }
     public String getCampusLocation() { return campusLocation; }
     public void setCampusLocation(String campusLocation) { this.campusLocation = campusLocation; }
+    public String getLocation() { return campusLocation; }
+    public void setLocation(String location) { this.campusLocation = location; }
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+    public String getNeighborhood() { return neighborhood; }
+    public void setNeighborhood(String neighborhood) { this.neighborhood = neighborhood; }
+    public String getLandmark() { return landmark; }
+    public void setLandmark(String landmark) { this.landmark = landmark; }
+    public String getPickupInstructions() { return pickupInstructions; }
+    public void setPickupInstructions(String pickupInstructions) { this.pickupInstructions = pickupInstructions; }
     public BigDecimal getSecurityDeposit() { return securityDeposit; }
     public void setSecurityDeposit(BigDecimal securityDeposit) { this.securityDeposit = securityDeposit; }
     public BigDecimal getRentalPricePerDay() { return rentalPricePerDay; }

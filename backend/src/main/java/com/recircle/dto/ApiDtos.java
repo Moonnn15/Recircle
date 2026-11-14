@@ -101,6 +101,11 @@ public class ApiDtos {
         String sharingType,
         String availabilityStatus,
         String campusLocation,
+        String location,
+        String city,
+        String neighborhood,
+        String landmark,
+        String pickupInstructions,
         BigDecimal securityDeposit,
         BigDecimal rentalPricePerDay,
         String availableFrom,
@@ -110,7 +115,52 @@ public class ApiDtos {
         String usageRules,
         String primaryImageUrl,
         List<String> galleryUrls
-    ) {}
+    ) {
+        public ItemUpsertRequest(
+            String title,
+            String description,
+            Long categoryId,
+            String subcategory,
+            String itemCondition,
+            String sharingType,
+            String availabilityStatus,
+            String campusLocation,
+            BigDecimal securityDeposit,
+            BigDecimal rentalPricePerDay,
+            String availableFrom,
+            String availableUntil,
+            Integer maxBorrowDays,
+            String exchangePreferences,
+            String usageRules,
+            String primaryImageUrl,
+            List<String> galleryUrls
+        ) {
+            this(
+                title,
+                description,
+                categoryId,
+                subcategory,
+                itemCondition,
+                sharingType,
+                availabilityStatus,
+                campusLocation,
+                campusLocation,
+                null,
+                null,
+                null,
+                null,
+                securityDeposit,
+                rentalPricePerDay,
+                availableFrom,
+                availableUntil,
+                maxBorrowDays,
+                exchangePreferences,
+                usageRules,
+                primaryImageUrl,
+                galleryUrls
+            );
+        }
+    }
 
     public record ItemDto(
         Long id,
@@ -123,6 +173,11 @@ public class ApiDtos {
         String sharingType,
         String availabilityStatus,
         String campusLocation,
+        String location,
+        String city,
+        String neighborhood,
+        String landmark,
+        String pickupInstructions,
         BigDecimal securityDeposit,
         BigDecimal rentalPricePerDay,
         String availableFrom,
@@ -158,6 +213,7 @@ public class ApiDtos {
         String itemTitle,
         String itemImageUrl,
         String campusLocation,
+        String location,
         Long borrowerId,
         String borrowerName,
         BigDecimal borrowerTrustScore,

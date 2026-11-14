@@ -76,8 +76,8 @@ export const AdminDashboardPage: React.FC = () => {
   }
 
   const kpis = [
-    { label: 'Total Campus Users', value: kpisData.totalRegisteredUsers, icon: Users, color: 'bg-[#E8F2EA] text-[#164B3B]' },
-    { label: 'Verified Students', value: kpisData.verifiedUsers, icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-800' },
+    { label: 'Total Community Users', value: kpisData.totalRegisteredUsers, icon: Users, color: 'bg-[#E8F2EA] text-[#164B3B]' },
+    { label: 'Verified Accounts', value: kpisData.verifiedUsers, icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-800' },
     { label: 'Active Accounts', value: kpisData.activeUsers, icon: Award, color: 'bg-teal-100 text-teal-800' },
     { label: 'Total Listed Items', value: kpisData.totalItemListings, icon: Package, color: 'bg-blue-100 text-blue-800' },
     { label: 'Available Items', value: kpisData.availableItems, icon: CheckCircle2, color: 'bg-[#E8F2EA] text-[#238B68]' },
@@ -94,11 +94,11 @@ export const AdminDashboardPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#164B3B] text-white p-6 rounded-2xl shadow-lg">
         <div>
           <span className="inline-block px-3 py-1 rounded-full bg-[#238B68] text-xs font-semibold uppercase tracking-wider mb-2">
-            SRM Campus Governance & Oversight
+            ReCircle Platform Governance & Oversight
           </span>
           <h1 className="text-2xl md:text-3xl font-bold">Administrator Control Center</h1>
           <p className="text-emerald-100 text-sm mt-1">
-            Real-time resource circulation metrics, student verification, and platform governance.
+            Real-time resource circulation metrics, account verification, and platform governance.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -145,7 +145,7 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="space-y-2.5">
             <Link to="/admin/users" className="flex items-center justify-between p-3.5 rounded-xl bg-[#F8F7F0] hover:bg-[#E8F2EA] transition">
               <span className="font-medium text-sm text-[#202923] flex items-center gap-2.5">
-                <Users className="w-4 h-4 text-[#164B3B]" /> Student Account Verification & Roles
+                <Users className="w-4 h-4 text-[#164B3B]" /> Account Verification & Roles
               </span>
               <span className="text-xs font-bold text-[#238B68]">Manage →</span>
             </Link>
@@ -157,7 +157,7 @@ export const AdminDashboardPage: React.FC = () => {
             </Link>
             <Link to="/admin/transactions" className="flex items-center justify-between p-3.5 rounded-xl bg-[#F8F7F0] hover:bg-[#E8F2EA] transition">
               <span className="font-medium text-sm text-[#202923] flex items-center gap-2.5">
-                <Repeat className="w-4 h-4 text-[#164B3B]" /> Campus Transaction Ledger
+                <Repeat className="w-4 h-4 text-[#164B3B]" /> Platform Transaction Ledger
               </span>
               <span className="text-xs font-bold text-[#238B68]">Audit →</span>
             </Link>
@@ -267,7 +267,7 @@ export const AdminAnalyticsPage: React.FC = () => {
             Platform Sustainability & Resource Analytics
           </h1>
           <p className="text-sm text-[#737B75] mt-1">
-            Comprehensive visual intelligence across 10 campus circulation dimensions.
+            Comprehensive visual intelligence across 10 resource circulation dimensions.
           </p>
         </div>
 
@@ -328,8 +328,8 @@ export const AdminAnalyticsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 1. Monthly User Registrations */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm">
-          <h3 className="font-bold text-[#202923] mb-1">1. Monthly Student Registrations</h3>
-          <p className="text-xs text-[#737B75] mb-4">Verified SRM campus onboarding growth trend</p>
+          <h3 className="font-bold text-[#202923] mb-1">1. Monthly User Registrations</h3>
+          <p className="text-xs text-[#737B75] mb-4">Verified onboarding and community growth trend</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analytics.registrationTrends}>
@@ -339,7 +339,7 @@ export const AdminAnalyticsPage: React.FC = () => {
                 <Tooltip />
                 <Legend />
                 <Area type="monotone" dataKey="registrations" name="Total Registered" stroke="#164B3B" fill="#A8C3A0" />
-                <Area type="monotone" dataKey="verified" name="Campus Verified" stroke="#238B68" fill="#E8F2EA" />
+                <Area type="monotone" dataKey="verified" name="Verified Accounts" stroke="#238B68" fill="#E8F2EA" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -348,7 +348,7 @@ export const AdminAnalyticsPage: React.FC = () => {
         {/* 2. Items Listed by Category */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm">
           <h3 className="font-bold text-[#202923] mb-1">2. Items Listed by Category</h3>
-          <p className="text-xs text-[#737B75] mb-4">Inventory distribution across campus resource types</p>
+          <p className="text-xs text-[#737B75] mb-4">Inventory distribution across resource categories</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analytics.categoryDistribution}>
@@ -433,7 +433,7 @@ export const AdminAnalyticsPage: React.FC = () => {
 
         {/* 6. Top Shared Categories */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm">
-          <h3 className="font-bold text-[#202923] mb-1">6. Top Shared Campus Categories</h3>
+          <h3 className="font-bold text-[#202923] mb-1">6. Top Shared Categories</h3>
           <p className="text-xs text-[#737B75] mb-4">Highest velocity resource categories by active listings</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -451,7 +451,7 @@ export const AdminAnalyticsPage: React.FC = () => {
         {/* 7. Department-wise Resource Sharing Activity */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm">
           <h3 className="font-bold text-[#202923] mb-1">7. Department-Wise Resource Sharing Activity</h3>
-          <p className="text-xs text-[#737B75] mb-4">Participation across SRM academic departments</p>
+          <p className="text-xs text-[#737B75] mb-4">Participation across departments and community sectors</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={departmentActivityData}>
@@ -467,7 +467,7 @@ export const AdminAnalyticsPage: React.FC = () => {
 
         {/* 8. Average Trust Score Distribution */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm">
-          <h3 className="font-bold text-[#202923] mb-1">8. Student Trust Score Distribution</h3>
+          <h3 className="font-bold text-[#202923] mb-1">8. Community Trust Score Distribution</h3>
           <p className="text-xs text-[#737B75] mb-4">Community reputation tiers from Low Trust to Excellent</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -476,7 +476,7 @@ export const AdminAnalyticsPage: React.FC = () => {
                 <XAxis dataKey="level" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="users" name="Students" fill="#52B788" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="users" name="Members" fill="#52B788" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -499,15 +499,15 @@ export const AdminAnalyticsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 10. Most Active Campus Contributors */}
+        {/* 10. Most Active Community Contributors */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm">
-          <h3 className="font-bold text-[#202923] mb-1">10. Most Active Campus Contributors Leaderboard</h3>
-          <p className="text-xs text-[#737B75] mb-4">Top students ranked by verified reputation and completed shares</p>
+          <h3 className="font-bold text-[#202923] mb-1">10. Most Active Community Contributors Leaderboard</h3>
+          <p className="text-xs text-[#737B75] mb-4">Top contributors ranked by verified reputation and completed shares</p>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-stone-200 text-xs text-[#737B75] uppercase">
-                  <th className="py-2 px-2">Student</th>
+                  <th className="py-2 px-2">Member</th>
                   <th className="py-2 px-2">Department</th>
                   <th className="py-2 px-2">Completed Txns</th>
                   <th className="py-2 px-2">Rating</th>
@@ -583,8 +583,8 @@ export const AdminUsersPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#202923]">Student & Staff Account Directory</h1>
-          <p className="text-sm text-[#737B75]">Verify SRM campus credentials, inspect trust scores, or suspend policy violators.</p>
+          <h1 className="text-2xl font-bold text-[#202923]">Community Member & Staff Account Directory</h1>
+          <p className="text-sm text-[#737B75]">Verify community credentials, inspect trust scores, or suspend policy violators.</p>
         </div>
         <div className="relative w-full sm:w-72">
           <Search className="w-4 h-4 text-[#737B75] absolute left-3.5 top-3" />
@@ -609,7 +609,7 @@ export const AdminUsersPage: React.FC = () => {
         <table className="w-full text-left border-collapse text-sm">
           <thead>
             <tr className="border-b border-stone-200 text-xs text-[#737B75] uppercase bg-[#F8F7F0]">
-              <th className="py-3.5 px-4">Student / User</th>
+              <th className="py-3.5 px-4">Member / User</th>
               <th className="py-3.5 px-4">Reg Number & Dept</th>
               <th className="py-3.5 px-4">Role</th>
               <th className="py-3.5 px-4">Trust Score</th>
@@ -711,7 +711,7 @@ export const AdminListingsPage: React.FC = () => {
     try {
       await apiClient.post('/categories', {
         name: newCatName,
-        description: newCatDesc || 'Campus resource category',
+        description: newCatDesc || 'Community resource category',
         iconName: 'Package',
       });
       setNewCatName('');
@@ -736,8 +736,8 @@ export const AdminListingsPage: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-[#202923]">Campus Listings & Category Governance</h1>
-        <p className="text-sm text-[#737B75]">Monitor active student listings and configure standardized resource taxonomies.</p>
+        <h1 className="text-2xl font-bold text-[#202923]">Community Listings & Category Governance</h1>
+        <p className="text-sm text-[#737B75]">Monitor active community listings and configure standardized resource taxonomies.</p>
       </div>
 
       {toast && (
@@ -857,7 +857,7 @@ export const AdminTransactionsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#202923]">Campus-Wide Transaction Ledger</h1>
+          <h1 className="text-2xl font-bold text-[#202923]">Platform-Wide Transaction Ledger</h1>
           <p className="text-sm text-[#737B75]">Complete history of all borrowing, rental, exchange, and donation workflows.</p>
         </div>
         <div className="flex gap-2">
@@ -934,7 +934,7 @@ export const AdminDisputesPage: React.FC = () => {
   }, []);
 
   const handleResolve = async (id: number, status: 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED') => {
-    const notes = notesMap[id] || 'Reviewed and adjudicated by SRM Campus Moderation Committee.';
+    const notes = notesMap[id] || 'Reviewed and adjudicated by ReCircle Moderation Committee.';
     try {
       await apiClient.put(`/admin/disputes/${id}/resolve`, {
         status,
@@ -953,7 +953,7 @@ export const AdminDisputesPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-[#202923]">Dispute Resolution & Content Moderation Queue</h1>
         <p className="text-sm text-[#737B75]">
-          Investigate reported listings, damaged returns, or overdue items and issue binding campus resolutions.
+          Investigate reported listings, damaged returns, or overdue items and issue binding resolutions.
         </p>
       </div>
 
@@ -1041,11 +1041,11 @@ export const ModeratorDashboardPage: React.FC = () => {
       <div className="bg-[#164B3B] text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <span className="inline-block px-3 py-1 rounded-full bg-[#238B68] text-xs font-semibold uppercase tracking-wider mb-2">
-            Campus Community Trust & Safety
+            Community Trust & Safety
           </span>
           <h1 className="text-2xl font-bold">Moderator Operations Desk</h1>
           <p className="text-emerald-100 text-sm mt-1">
-            Review flagged listings, investigate student disputes, and uphold SRM community sharing guidelines.
+            Review flagged listings, investigate member disputes, and uphold ReCircle community sharing guidelines.
           </p>
         </div>
         <div className="flex gap-3">

@@ -92,25 +92,98 @@ public class ReCircleBackendIntegrationTest {
 
     @Test
     @Order(2)
-    @DisplayName("TC02: Invalid Non-Campus Email Rejection")
-    void test02_invalidEmailDomain() throws Exception {
-        RegisterRequest req = new RegisterRequest(
-            "External User",
-            "external@gmail.com",
+    @DisplayName("TC02: General Public Registration (Gmail & Outlook), Missing Student Fields & Malformed Email Rejection")
+    void test02_generalPublicRegistrationAndValidation() throws Exception {
+        // 1. Valid Gmail registration without student-specific fields (registrationNumber, department, yearOfStudy)
+        RegisterRequest gmailReq = new RegisterRequest(
+            "Maya Sharma",
+            "maya.sharma@gmail.com",
             "SecurePass@2026",
             "SecurePass@2026",
-            "RA2211003010888",
-            "CSE",
-            2,
-            "9876543210",
+            null, // optional registration number
+            null, // optional department
+            null, // optional year of study
+            "+91 98401 12345",
+            null,
+            "Community resident interested in book sharing.",
+            "Green Community Park Entrance",
+            null
+        );
+
+        MvcResult gmailRes = mockMvc.perform(post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(gmailReq)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.accessToken").isNotEmpty())
+            .andExpect(jsonPath("$.user.email").value("maya.sharma@gmail.com"))
+            .andExpect(jsonPath("$.user.department").value("Community Member"))
+            .andReturn();
+
+        JsonNode gmailJson = objectMapper.readTree(gmailRes.getResponse().getContentAsString());
+        String gmailToken = gmailJson.get("accessToken").asText();
+
+        // 2. Valid Outlook registration without student fields
+        RegisterRequest outlookReq = new RegisterRequest(
+            "Kiran Rao",
+            "kiran.rao@outlook.com",
+            "SecurePass@2026",
+            "SecurePass@2026",
+            null, null, null,
+            "+91 98402 34567",
             null, null, null, null
         );
 
         mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(outlookReq)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.user.email").value("kiran.rao@outlook.com"));
+
+        // 3. Malformed invalid email format rejection
+        RegisterRequest malformedEmailReq = new RegisterRequest(
+            "Invalid Format User",
+            "not-an-email-address",
+            "SecurePass@2026",
+            "SecurePass@2026",
+            null, null, null,
+            "+91 98403 45678",
+            null, null, null, null
+        );
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(malformedEmailReq)))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("INVALID_CAMPUS_DOMAIN"));
+            .andExpect(jsonPath("$.error").value("INVALID_EMAIL"));
+
+        // 4. Duplicate email rejection on public Gmail user
+        mockMvc.perform(post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(gmailReq)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.error").value("DUPLICATE_EMAIL"));
+
+        // 5. Email OTP verification for the public Gmail account
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new VerifyEmailRequest("maya.sharma@gmail.com", "123456"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.user.emailVerified").value(true));
+
+        // 6. JWT authenticated access for the verified Gmail account
+        mockMvc.perform(get("/api/v1/users/me")
+                .header("Authorization", "Bearer " + gmailToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value("maya.sharma@gmail.com"))
+            .andExpect(jsonPath("$.emailVerified").value(true));
+
+        // 7. Verify existing student account can log in successfully
+        mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new LoginRequest("aarav.krishnan@srmist.edu.in", "ReCircle@2026"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.user.email").value("aarav.krishnan@srmist.edu.in"))
+            .andExpect(jsonPath("$.accessToken").isNotEmpty());
     }
 
     @Test
@@ -1324,5 +1397,135 @@ public class ReCircleBackendIntegrationTest {
                 assertThat(details).doesNotContain("token");
             }
         }
+    }
+
+    @Test
+    @Order(31)
+    @DisplayName("TC43 (Phase 2): Location Generalization - Listing Creation, Update, City/Neighborhood Filtering & Workflow")
+    void test31_phase2LocationGeneralizationAndFiltering() throws Exception {
+        // 1. Create a listing with general community location
+        ItemUpsertRequest generalItemReq = new ItemUpsertRequest(
+            "Community Woodworking Toolset",
+            "Complete 45-piece hand toolset with cordless drill and safety goggles for community DIY projects.",
+            1L,
+            "DIY & Tools",
+            "LIKE_NEW",
+            "BORROW",
+            "AVAILABLE",
+            "Bengaluru, Koramangala 4th Block, Near Sony Signal",
+            "Bengaluru, Koramangala 4th Block, Near Sony Signal",
+            "Bengaluru",
+            "Koramangala",
+            "Near Sony Signal",
+            "Available on weekday evenings; please call before arriving.",
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            LocalDate.now().toString(),
+            LocalDate.now().plusMonths(2).toString(),
+            7,
+            "Open to swapping for bicycle repair tools",
+            "Please clean tools after use and pack them into the toolbox.",
+            "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c",
+            List.of()
+        );
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/items")
+                .header("Authorization", "Bearer " + studentToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(generalItemReq)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").isNumber())
+            .andExpect(jsonPath("$.campusLocation").value("Bengaluru, Koramangala 4th Block, Near Sony Signal"))
+            .andExpect(jsonPath("$.location").value("Bengaluru, Koramangala 4th Block, Near Sony Signal"))
+            .andExpect(jsonPath("$.city").value("Bengaluru"))
+            .andExpect(jsonPath("$.neighborhood").value("Koramangala"))
+            .andExpect(jsonPath("$.landmark").value("Near Sony Signal"))
+            .andExpect(jsonPath("$.pickupInstructions").value("Available on weekday evenings; please call before arriving."))
+            .andReturn();
+
+        Long newItemId = objectMapper.readTree(createRes.getResponse().getContentAsString()).get("id").asLong();
+
+        // 2. Update listing location
+        ItemUpsertRequest updateLocReq = new ItemUpsertRequest(
+            "Community Woodworking Toolset",
+            "Complete 45-piece hand toolset with cordless drill and safety goggles for community DIY projects.",
+            1L,
+            "DIY & Tools",
+            "LIKE_NEW",
+            "BORROW",
+            "AVAILABLE",
+            "Bengaluru, Indiranagar 100ft Road, Near Metro Station",
+            "Bengaluru, Indiranagar 100ft Road, Near Metro Station",
+            "Bengaluru",
+            "Indiranagar",
+            "Near Metro Station",
+            "Ring doorbell at flat 201.",
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            LocalDate.now().toString(),
+            LocalDate.now().plusMonths(2).toString(),
+            7,
+            "Open to swapping for bicycle repair tools",
+            "Please clean tools after use and pack them into the toolbox.",
+            "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c",
+            List.of()
+        );
+
+        mockMvc.perform(put("/api/v1/items/" + newItemId)
+                .header("Authorization", "Bearer " + studentToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateLocReq)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.neighborhood").value("Indiranagar"))
+            .andExpect(jsonPath("$.landmark").value("Near Metro Station"));
+
+        // 3. Search items by city filter (city=Bengaluru)
+        mockMvc.perform(get("/api/v1/items")
+                .param("city", "Bengaluru"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items").isArray())
+            .andExpect(jsonPath("$.items[?(@.id == " + newItemId + ")]").exists());
+
+        // 4. Filter items by neighborhood (neighborhood=Indiranagar)
+        mockMvc.perform(get("/api/v1/items")
+                .param("neighborhood", "Indiranagar"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items").isArray())
+            .andExpect(jsonPath("$.items[?(@.id == " + newItemId + ")]").exists());
+
+        // Filter by non-existent neighborhood returns 0 results
+        mockMvc.perform(get("/api/v1/items")
+                .param("neighborhood", "NonExistentNeighborhood99"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items.length()").value(0));
+
+        // 5. Verify existing campus listing backward compatibility
+        mockMvc.perform(get("/api/v1/items/" + createdBorrowItemId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.item.campusLocation").value("Tech Park Library"))
+            .andExpect(jsonPath("$.item.location").value("Tech Park Library"));
+
+        // 6. Test full sharing workflow on general community item
+        String bStart = LocalDate.now().plusDays(20).toString();
+        String bEnd = LocalDate.now().plusDays(23).toString();
+
+        MvcResult borrowRes = mockMvc.perform(post("/api/v1/borrow-requests")
+                .header("Authorization", "Bearer " + secondStudentToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new BorrowCreateRequest(newItemId, bStart, bEnd, "Borrowing woodworking kit for community project."))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.campusLocation").value("Bengaluru, Indiranagar 100ft Road, Near Metro Station"))
+            .andExpect(jsonPath("$.location").value("Bengaluru, Indiranagar 100ft Road, Near Metro Station"))
+            .andReturn();
+
+        Long borrowReqId = objectMapper.readTree(borrowRes.getResponse().getContentAsString()).get("id").asLong();
+
+        // Owner approves
+        mockMvc.perform(put("/api/v1/borrow-requests/" + borrowReqId + "/approve")
+                .header("Authorization", "Bearer " + studentToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new DecisionNoteRequest("Approved! Meet at Indiranagar Metro Station."))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("APPROVED"));
     }
 }

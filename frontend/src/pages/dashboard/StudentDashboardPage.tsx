@@ -64,13 +64,13 @@ export const StudentDashboardPage: React.FC = () => {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-[#A8C3A0]" />
-            {user.department} • Year {user.yearOfStudy}
+            {user.department || 'Community Member'}{user.yearOfStudy ? ` • Year ${user.yearOfStudy}` : ''}
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold">
             Welcome back, {user.fullName}!
           </h1>
           <p className="text-xs sm:text-sm text-[#E8F2EA]/90 max-w-xl">
-            Your campus resource-sharing hub is synced in real time. Share unused textbooks, electronics, and
+            Your community resource-sharing hub is synced in real time. Share unused items, tools, electronics, and
             equipment to strengthen your community reputation.
           </p>
         </div>
@@ -112,14 +112,14 @@ export const StudentDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Unverified Campus Email Alert */}
+      {/* Unverified Account Email Alert */}
       {!user.campusVerified && (
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-amber-700 shrink-0" />
             <div>
               <p className="text-xs font-bold text-amber-900">
-                Verify your SRM Campus Email to boost your Trust Score by +15 points!
+                Verify your email address to boost your Trust Score by +15 points!
               </p>
               <p className="text-xs text-amber-800">
                 Use your 6-digit registration OTP (or local dev test OTP: 123456) on your Profile page.
@@ -180,13 +180,13 @@ export const StudentDashboardPage: React.FC = () => {
             <div className="p-8 rounded-2xl bg-[#F8F7F0] text-center space-y-2">
               <p className="text-sm font-semibold text-[#202923]">No active borrowed items right now</p>
               <p className="text-xs text-[#737B75]">
-                Explore textbooks, calculators, and lab kits shared by fellow students.
+                Explore textbooks, tools, electronics, and gear shared by fellow community members.
               </p>
               <Link
                 to="/discover"
                 className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 rounded-xl bg-[#164B3B] text-white text-xs font-semibold"
               >
-                Browse Campus Marketplace
+                Browse Marketplace
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -249,15 +249,15 @@ export const StudentDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Recommended Available Campus Resources */}
+      {/* Recommended Available Community Resources */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-xl font-bold text-[#164B3B]">
-              Recommended Campus Resources
+              Recommended Community Resources
             </h2>
             <p className="text-xs text-[#737B75]">
-              Available items from high-trust students across SRM Kattankulathur
+              Available items from high-trust community members
             </p>
           </div>
           <Link

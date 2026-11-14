@@ -81,13 +81,13 @@ const UnauthorizedPage: React.FC = () => (
       </span>
       <h1 className="text-2xl font-bold text-[#202923]">Insufficient Role Permissions</h1>
       <p className="text-sm text-[#737B75]">
-        Your current campus role does not have authorization to access this administrative or moderation view.
+        Your current role does not have authorization to access this administrative or moderation view.
       </p>
       <Link
         to="/dashboard"
         className="inline-block px-5 py-2.5 rounded-xl bg-[#164B3B] text-white text-sm font-semibold hover:bg-[#238B68]"
       >
-        Return to Student Dashboard
+        Return to Community Dashboard
       </Link>
     </div>
   </div>
@@ -101,7 +101,7 @@ const NotFoundPage: React.FC = () => (
       </span>
       <h1 className="text-2xl font-bold text-[#202923]">Resource Route Not Found</h1>
       <p className="text-sm text-[#737B75]">
-        The campus page or listing you requested could not be found or has been archived.
+        The page or listing you requested could not be found or has been archived.
       </p>
       <Link
         to="/"

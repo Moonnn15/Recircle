@@ -40,18 +40,18 @@ export const TrustScoreDetailsPage: React.FC = () => {
 
   const components = [
     {
-      title: '1. Verified Campus Account Score',
+      title: '1. Verified Account Status',
       weight: '15% Weight',
       score: details.verifiedAccountScore,
       desc: details.campusVerified
-        ? 'Verified SRM campus email (@srmist.edu.in) confirmed.'
-        : 'Account not yet verified. Verify your campus OTP to earn 100/100.',
+        ? 'Verified account status and confirmed email address.'
+        : 'Account not yet verified. Verify your email verification OTP to earn 100/100.',
     },
     {
       title: '2. Completed Transaction Score',
       weight: '35% Weight',
       score: details.completedTxScore,
-      desc: `Calculated from ${details.completedTransactionsCount} verified completed campus resource shares using a bounded anti-gaming curve.`,
+      desc: `Calculated from ${details.completedTransactionsCount} verified completed resource transactions using a bounded anti-gaming curve.`,
     },
     {
       title: '3. Peer User Review Score',
@@ -233,7 +233,7 @@ export const ReviewsPage: React.FC = () => {
       {/* Submit Review Form for Eligible Completed Transactions */}
       <div className="bg-white rounded-3xl p-6 border border-[#A8C3A0]/50 space-y-4">
         <h2 className="font-display text-lg font-bold text-[#164B3B]">
-          Rate a Completed Campus Transaction ({eligibleTxs.length} Eligible)
+          Rate a Completed Transaction ({eligibleTxs.length} Eligible)
         </h2>
         {eligibleTxs.length === 0 ? (
           <p className="text-xs text-[#737B75]">
@@ -266,7 +266,7 @@ export const ReviewsPage: React.FC = () => {
                   onChange={(e) => setRating(Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-xs bg-white font-bold text-[#164B3B]"
                 >
-                  <option value={5}>★★★★★ (5 – Excellent Campus Partner)</option>
+                  <option value={5}>★★★★★ (5 – Excellent Community Partner)</option>
                   <option value={4}>★★★★☆ (4 – Good Experience)</option>
                   <option value={3}>★★★☆☆ (3 – Satisfactory)</option>
                   <option value={2}>★★☆☆☆ (2 – Minor Delay)</option>
@@ -549,7 +549,7 @@ export const DisputeReportingPage: React.FC = () => {
           Dispute Resolution & Incident Reporting
         </h1>
         <p className="text-xs text-[#737B75]">
-          Report damaged items, late returns, or misleading descriptions for impartial campus moderation
+          Report damaged items, late returns, or misleading descriptions for impartial community moderation
         </p>
       </div>
 
@@ -690,7 +690,7 @@ export const UserProfilePage: React.FC = () => {
     try {
       await apiClient.put('/users/me', form);
       await refreshUserProfile();
-      showToast('Campus profile updated!', 'success');
+      showToast('Profile updated!', 'success');
     } catch (err) {
       showToast(extractErrorMessage(err), 'error');
     }
@@ -702,7 +702,7 @@ export const UserProfilePage: React.FC = () => {
     try {
       await apiClient.post('/auth/verify-email', { email: user.email, otpCode });
       await refreshUserProfile();
-      showToast('Campus email verified! +15 Trust Score awarded!', 'success');
+      showToast('Email verified! +15 Trust Score awarded!', 'success');
     } catch (err) {
       showToast(extractErrorMessage(err), 'error');
     }
@@ -722,7 +722,7 @@ export const UserProfilePage: React.FC = () => {
               <h1 className="font-display text-2xl font-bold text-[#202923]">{user.fullName}</h1>
               {user.campusVerified && (
                 <span className="px-2.5 py-0.5 rounded-full bg-[#E8F2EA] text-[#164B3B] text-xs font-bold">
-                  ✓ Verified Campus ID
+                  ✓ Verified Account Status
                 </span>
               )}
             </div>
@@ -746,7 +746,7 @@ export const UserProfilePage: React.FC = () => {
         >
           <div>
             <h3 className="font-display font-bold text-base text-[#164B3B]">
-              Verify Your SRM Campus Email
+              Verify Your Email Address
             </h3>
             <p className="text-xs text-[#202923]">
               Enter your 6-digit verification OTP (or local dev test OTP: <strong>123456</strong>)
@@ -774,7 +774,7 @@ export const UserProfilePage: React.FC = () => {
         className="bg-white rounded-3xl p-6 sm:p-8 border border-[#A8C3A0]/50 space-y-4"
       >
         <h2 className="font-display text-lg font-bold text-[#164B3B]">
-          Edit Academic & Campus Profile ({user.profileCompletionPct}% Complete)
+          Edit Profile Details ({user.profileCompletionPct}% Complete)
         </h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -787,7 +787,7 @@ export const UserProfilePage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Department</label>
+            <label className="block text-xs font-semibold mb-1">Department / Background</label>
             <input
               type="text"
               value={form.department}
@@ -805,7 +805,7 @@ export const UserProfilePage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Hostel / Block</label>
+            <label className="block text-xs font-semibold mb-1">Neighborhood / Area</label>
             <input
               type="text"
               value={form.hostelOrBlock}
@@ -814,7 +814,7 @@ export const UserProfilePage: React.FC = () => {
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold mb-1">Preferred Campus Handover Spot</label>
+            <label className="block text-xs font-semibold mb-1">Preferred Pickup / Handover Spot</label>
             <input
               type="text"
               value={form.preferredPickupSpot}
@@ -823,7 +823,7 @@ export const UserProfilePage: React.FC = () => {
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold mb-1">Student Bio</label>
+            <label className="block text-xs font-semibold mb-1">About Me / Community Bio</label>
             <textarea
               rows={3}
               value={form.bio}
@@ -856,7 +856,7 @@ export const AccountSettingsPage: React.FC = () => {
       <div>
         <h1 className="font-display text-2xl font-bold text-[#164B3B]">Account & Security Settings</h1>
         <p className="text-xs text-[#737B75]">
-          Configure return reminders, campus privacy preferences, and session security
+          Configure return reminders, privacy preferences, and session security
         </p>
       </div>
 
@@ -876,8 +876,8 @@ export const AccountSettingsPage: React.FC = () => {
 
         <div className="flex items-center justify-between py-2 border-b border-[#E8F2EA]">
           <div>
-            <p className="font-bold text-sm text-[#202923]">Display Department Badge on Listings</p>
-            <p className="text-[#737B75]">Allow verified SRM students to filter items by your department</p>
+            <p className="font-bold text-sm text-[#202923]">Display Department / Background Badge on Listings</p>
+            <p className="text-[#737B75]">Allow community members to view your background on item cards</p>
           </div>
           <input
             type="checkbox"

@@ -48,7 +48,7 @@ export const LandingPage: React.FC = () => {
               to="/discover"
               className="hidden sm:inline-flex px-4 py-2.5 rounded-xl text-sm font-semibold text-[#164B3B] hover:bg-[#E8F2EA] transition-colors"
             >
-              Explore Campus Items
+              Explore Items
             </Link>
             {user ? (
               <Link
@@ -69,7 +69,7 @@ export const LandingPage: React.FC = () => {
                   to="/register"
                   className="px-5 py-2.5 rounded-xl bg-[#164B3B] hover:bg-[#238B68] text-white text-sm font-semibold shadow-xs transition-colors"
                 >
-                  Join Campus Community
+                  Join Community
                 </Link>
               </>
             )}
@@ -83,25 +83,24 @@ export const LandingPage: React.FC = () => {
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8F2EA] border border-[#A8C3A0] text-[#164B3B] text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5 text-[#238B68]" />
-              SRM Institute of Science & Technology • Circular Campus Initiative
+              Circular Community Sharing & Resource Exchange
             </div>
             <h1 className="font-display text-4xl sm:text-6xl font-bold text-[#164B3B] leading-[1.08]">
-              Share Campus Resources with{' '}
+              Share Community Resources with{' '}
               <span className="text-[#238B68] underline decoration-[#A8C3A0] decoration-4 underline-offset-8">
                 Verified Trust.
               </span>
             </h1>
             <p className="text-base sm:text-lg text-[#737B75] max-w-2xl leading-relaxed">
-              Stop buying brand-new textbooks, calculators, Arduino kits, lab coats, and bicycles for a single
-              semester. ReCircle connects verified students to borrow, lend, rent, exchange, and donate resources
-              backed by a dynamic 0–100 reputation score.
+              A community-driven platform that enables people to lend, borrow, exchange, rent and donate resources
+              they rarely use. Connect with verified members backed by a dynamic 0–100 reputation score.
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
                 to="/register"
                 className="px-6 py-3.5 rounded-2xl bg-[#164B3B] hover:bg-[#238B68] text-white font-semibold text-sm inline-flex items-center gap-2 shadow-md transition-all"
               >
-                Register with Campus Email
+                Register Now
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
@@ -115,7 +114,7 @@ export const LandingPage: React.FC = () => {
             <div className="pt-6 grid grid-cols-3 gap-4 border-t border-[#A8C3A0]/40 max-w-xl">
               <div>
                 <p className="font-display text-2xl font-bold text-[#164B3B]">100%</p>
-                <p className="text-xs text-[#737B75]">Campus Email Verified</p>
+                <p className="text-xs text-[#737B75]">Verified Account Status</p>
               </div>
               <div>
                 <p className="font-display text-2xl font-bold text-[#238B68]">4 Modes</p>
@@ -148,7 +147,7 @@ export const LandingPage: React.FC = () => {
 
               <div className="space-y-3 text-xs">
                 <div className="p-3 rounded-xl bg-white/8 flex items-center justify-between">
-                  <span>Verified Campus Account (× 0.15)</span>
+                  <span>Verified Account Status (× 0.15)</span>
                   <span className="font-bold text-[#A8C3A0]">100 / 100</span>
                 </div>
                 <div className="p-3 rounded-xl bg-white/8 flex items-center justify-between">
@@ -178,7 +177,7 @@ export const LandingPage: React.FC = () => {
       <section className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-display text-3xl font-bold text-[#164B3B]">
-            Four Structured Ways to Share Across Campus
+            Four Structured Ways to Share Across the Community
           </h2>
           <p className="mt-2 text-sm text-[#737B75]">
             Every transaction is protected by conflict-free reservation checks, handover confirmation, and mutual
@@ -191,22 +190,22 @@ export const LandingPage: React.FC = () => {
             {
               icon: <BookOpen className="w-6 h-6 text-[#164B3B]" />,
               title: '1. Borrow & Lend',
-              desc: 'Lend textbooks, calculators, and sports gear for up to 14 days with automated return reminders.',
+              desc: 'Lend books, tools, and sports gear for up to 14 days with automated return reminders.',
             },
             {
               icon: <Bike className="w-6 h-6 text-[#164B3B]" />,
-              title: '2. Campus Rentals',
-              desc: 'Rent bicycles, guitars, or DSLR tripods at affordable daily student rates with transparent calculation.',
+              title: '2. Community Rentals',
+              desc: 'Rent bicycles, musical instruments, or photography gear at affordable daily rates with transparent calculation.',
             },
             {
               icon: <Cpu className="w-6 h-6 text-[#164B3B]" />,
               title: '3. Peer Exchanges',
-              desc: 'Propose direct item-for-item swaps (e.g., wireless mouse for rechargeable study lamp) with dual handover.',
+              desc: 'Propose direct item-for-item swaps (e.g., power drill for cordless lawn trimmer) with dual handover.',
             },
             {
               icon: <Award className="w-6 h-6 text-[#164B3B]" />,
-              title: '4. Senior Donations',
-              desc: 'Graduating seniors donate mini-drafters, lab coats, and GATE books to incoming first-year students.',
+              title: '4. Free Donations',
+              desc: 'Donate textbooks, home appliances, and tools to fellow community members freely and sustainably.',
             },
           ].map((card) => (
             <div
@@ -226,9 +225,9 @@ export const LandingPage: React.FC = () => {
       <footer className="mt-auto bg-[#164B3B] text-[#E8F2EA] py-8 px-4 sm:px-8 border-t border-[#238B68]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <p className="font-medium">
-            © 2026 ReCircle – Trust-Based Campus Community Resource Sharing System (SRM IST Kattankulathur).
+            © 2026 ReCircle – Community Sharing and Resource Exchange Management System.
           </p>
-          <p className="text-[#A8C3A0]">Aligned with UN SDG 11 & SDG 12 • Share More. Waste Less. Build Trust.</p>
+          <p className="text-[#A8C3A0]">Share More. Waste Less. Build Trust. • Aligned with UN SDG 11 & SDG 12</p>
         </div>
       </footer>
     </div>
@@ -287,10 +286,10 @@ export const LoginPage: React.FC = () => {
           <span className="font-display text-2xl font-bold text-[#164B3B]">ReCircle</span>
         </Link>
         <h2 className="mt-4 font-display text-2xl font-bold text-[#202923]">
-          Sign in to your campus account
+          Sign in to your account
         </h2>
         <p className="mt-1 text-xs text-[#737B75]">
-          Access verified student listings, transactions, and your Trust Score
+          Access verified community listings, transactions, and your Trust Score
         </p>
       </div>
 
@@ -307,7 +306,7 @@ export const LoginPage: React.FC = () => {
                 onClick={() => fillDemoAccount('aarav.krishnan@srmist.edu.in')}
                 className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#164B3B] hover:text-white text-[#164B3B] text-xs font-semibold border border-[#A8C3A0] transition-colors cursor-pointer"
               >
-                Student (Aarav)
+                Member (Aarav)
               </button>
               <button
                 type="button"
@@ -335,7 +334,7 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-[#202923] mb-1">
-                Campus Email Address
+                Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-[#737B75] absolute left-3.5 top-3" />
@@ -345,7 +344,7 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#A8C3A0] text-sm focus:outline-none focus:border-[#164B3B]"
-                  placeholder="student@srmist.edu.in"
+                  placeholder="name@example.com"
                 />
               </div>
             </div>
@@ -381,7 +380,7 @@ export const LoginPage: React.FC = () => {
           <p className="text-center text-xs text-[#737B75]">
             New to ReCircle?{' '}
             <Link to="/register" className="font-semibold text-[#164B3B] hover:underline">
-              Create your verified student account
+              Create your verified account
             </Link>
           </p>
         </div>
@@ -407,8 +406,9 @@ export const RegisterPage: React.FC = () => {
     yearOfStudy: 3,
     contactNumber: '',
     hostelOrBlock: '',
-    preferredPickupSpot: 'Tech Park Ground Floor Lobby',
+    preferredPickupSpot: 'Community Center / Main Entrance',
   });
+  const [isStudentMember, setIsStudentMember] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -417,12 +417,19 @@ export const RegisterPage: React.FC = () => {
     setError('');
     setSubmitting(true);
     try {
+      const payload = {
+        ...form,
+        registrationNumber: isStudentMember && form.registrationNumber.trim() ? form.registrationNumber.trim() : null,
+        department: isStudentMember && form.department.trim() ? form.department.trim() : 'General Community',
+        yearOfStudy: isStudentMember ? form.yearOfStudy : null,
+        hostelOrBlock: isStudentMember && form.hostelOrBlock.trim() ? form.hostelOrBlock.trim() : null,
+      };
       const res = await apiClient.post<{
         accessToken: string;
         refreshToken: string;
         devOtpPreview?: string;
         user: UserSummary;
-      }>('/auth/register', form);
+      }>('/auth/register', payload);
       setSession(res.data.accessToken, res.data.refreshToken, res.data.user);
       showToast(
         `Registered! Dev OTP: ${res.data.devOtpPreview || '123456'}. Verify in Profile.`,
@@ -446,10 +453,10 @@ export const RegisterPage: React.FC = () => {
           <span className="font-display text-2xl font-bold text-[#164B3B]">ReCircle</span>
         </Link>
         <h2 className="mt-3 font-display text-2xl font-bold text-[#202923]">
-          Create Your Verified SRM Student Account
+          Create Your ReCircle Account
         </h2>
         <p className="mt-1 text-xs text-[#737B75]">
-          Requires an authorized campus email domain (@srmist.edu.in, @campus.edu, @edu.in)
+          Join the community platform to borrow, lend, exchange, and donate resources.
         </p>
       </div>
 
@@ -476,62 +483,16 @@ export const RegisterPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-[#202923] mb-1">
-                Campus Email (@srmist.edu.in) *
+                Email Address *
               </label>
               <input
                 type="email"
                 required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="sm1234@srmist.edu.in"
+                placeholder="name@example.com (Gmail, Outlook or campus)"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#202923] mb-1">
-                Student Registration Number *
-              </label>
-              <input
-                type="text"
-                required
-                value={form.registrationNumber}
-                onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
-                placeholder="RA2211003010512"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm uppercase"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#202923] mb-1">Department *</label>
-              <select
-                value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm bg-white"
-              >
-                <option>Computer Science and Engineering</option>
-                <option>Electronics and Communication Engineering</option>
-                <option>Mechanical Engineering</option>
-                <option>Electrical and Electronics Engineering</option>
-                <option>Biotechnology</option>
-                <option>Civil Engineering</option>
-                <option>Aerospace Engineering</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#202923] mb-1">Year of Study *</label>
-              <select
-                value={form.yearOfStudy}
-                onChange={(e) => setForm({ ...form, yearOfStudy: Number(e.target.value) })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm bg-white"
-              >
-                <option value={1}>1st Year</option>
-                <option value={2}>2nd Year</option>
-                <option value={3}>3rd Year</option>
-                <option value={4}>4th Year</option>
-                <option value={5}>5th Year / Integrated</option>
-              </select>
             </div>
 
             <div>
@@ -548,26 +509,104 @@ export const RegisterPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-[#202923] mb-1">
-                Hostel / Campus Block
-              </label>
-              <input
-                type="text"
-                value={form.hostelOrBlock}
-                onChange={(e) => setForm({ ...form, hostelOrBlock: e.target.value })}
-                placeholder="Nelson Mandela Hostel / Tech Park"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#202923] mb-1">
-                Preferred Campus Exchange Spot
+                Preferred Community Pickup Spot
               </label>
               <input
                 type="text"
                 value={form.preferredPickupSpot}
                 onChange={(e) => setForm({ ...form, preferredPickupSpot: e.target.value })}
-                placeholder="Central Library Entrance"
+                placeholder="e.g., Community Center, Metro Station, Library"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm"
+              />
+            </div>
+
+            {/* Optional Campus / Student Toggle */}
+            <div className="sm:col-span-2 pt-2 pb-1 border-t border-[#A8C3A0]/30">
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-[#164B3B]">
+                <input
+                  type="checkbox"
+                  checked={isStudentMember}
+                  onChange={(e) => setIsStudentMember(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#164B3B] focus:ring-[#164B3B]"
+                />
+                <span>I am a student or campus member (Optional)</span>
+              </label>
+              <p className="text-[11px] text-[#737B75] mt-0.5">
+                General community members can leave this unchecked. Students can provide registration details for institutional verification.
+              </p>
+            </div>
+
+            {isStudentMember && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-[#202923] mb-1">
+                    Student Registration Number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.registrationNumber}
+                    onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
+                    placeholder="e.g., RA2211003010512"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#202923] mb-1">Department</label>
+                  <select
+                    value={form.department}
+                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm bg-white"
+                  >
+                    <option>Computer Science and Engineering</option>
+                    <option>Electronics and Communication Engineering</option>
+                    <option>Mechanical Engineering</option>
+                    <option>Electrical and Electronics Engineering</option>
+                    <option>Biotechnology</option>
+                    <option>Civil Engineering</option>
+                    <option>Aerospace Engineering</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#202923] mb-1">Year of Study</label>
+                  <select
+                    value={form.yearOfStudy}
+                    onChange={(e) => setForm({ ...form, yearOfStudy: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm bg-white"
+                  >
+                    <option value={1}>1st Year</option>
+                    <option value={2}>2nd Year</option>
+                    <option value={3}>3rd Year</option>
+                    <option value={4}>4th Year</option>
+                    <option value={5}>5th Year / Integrated</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#202923] mb-1">
+                    Hostel / Campus Block
+                  </label>
+                  <input
+                    type="text"
+                    value={form.hostelOrBlock}
+                    onChange={(e) => setForm({ ...form, hostelOrBlock: e.target.value })}
+                    placeholder="e.g., Block B / Hostel 4"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm"
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-[#202923] mb-1">
+                Preferred Handover / Pickup Spot
+              </label>
+              <input
+                type="text"
+                value={form.preferredPickupSpot}
+                onChange={(e) => setForm({ ...form, preferredPickupSpot: e.target.value })}
+                placeholder="Community Center / Main Entrance"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm"
               />
             </div>
@@ -604,7 +643,7 @@ export const RegisterPage: React.FC = () => {
                 disabled={submitting}
                 className="w-full py-3 px-4 rounded-xl bg-[#164B3B] hover:bg-[#238B68] text-white font-semibold text-sm transition-colors cursor-pointer"
               >
-                {submitting ? 'Creating Verified Profile...' : 'Register Campus Account'}
+                {submitting ? 'Creating Verified Profile...' : 'Register Account'}
               </button>
             </div>
           </form>
@@ -672,11 +711,11 @@ export const ForgotPasswordPage: React.FC = () => {
         <div className="bg-white py-8 px-6 shadow-md rounded-3xl border border-[#A8C3A0]/50 space-y-5">
           <div className="text-center">
             <h2 className="font-display text-2xl font-bold text-[#164B3B]">
-              {step === 'request' ? 'Recover Campus Password' : 'Set New Password'}
+              {step === 'request' ? 'Recover Password' : 'Set New Password'}
             </h2>
             <p className="mt-1 text-xs text-[#737B75]">
               {step === 'request'
-                ? 'Enter your registered campus email to generate a secure recovery token'
+                ? 'Enter your registered email address to generate a secure recovery token'
                 : 'Enter the recovery token and choose a strong new password'}
             </p>
           </div>
@@ -690,13 +729,13 @@ export const ForgotPasswordPage: React.FC = () => {
           {step === 'request' ? (
             <form onSubmit={handleRequestToken} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold mb-1">Campus Email</label>
+                <label className="block text-xs font-semibold mb-1">Email Address</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="aarav.krishnan@srmist.edu.in"
+                  placeholder="name@example.com"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#A8C3A0] text-sm"
                 />
               </div>

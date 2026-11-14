@@ -48,6 +48,11 @@ export interface ItemListing {
   sharingType: SharingType;
   availabilityStatus: ListingStatus;
   campusLocation: string;
+  location?: string;
+  city?: string;
+  neighborhood?: string;
+  landmark?: string;
+  pickupInstructions?: string;
   securityDeposit: number;
   rentalPricePerDay: number;
   availableFrom: string | null;

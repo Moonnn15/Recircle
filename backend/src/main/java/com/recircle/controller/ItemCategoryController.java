@@ -69,12 +69,14 @@ public class ItemCategoryController {
         @RequestParam(required = false) String condition,
         @RequestParam(required = false) String availability,
         @RequestParam(required = false) BigDecimal maxPrice,
+        @RequestParam(required = false) String city,
+        @RequestParam(required = false) String neighborhood,
         @RequestParam(defaultValue = "newest") String sortBy,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "12") int size
     ) {
         return ResponseEntity.ok(itemService.searchAndFilterItems(
-            query, categoryId, department, sharingType, condition, availability, maxPrice, sortBy, page, size
+            query, categoryId, department, sharingType, condition, availability, maxPrice, city, neighborhood, sortBy, page, size
         ));
     }
 

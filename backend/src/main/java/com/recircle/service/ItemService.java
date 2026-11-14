@@ -85,6 +85,24 @@ public class ItemService {
         int page,
         int size
     ) {
+        return searchAndFilterItems(query, categoryId, department, sharingType, condition, availability, maxPrice, null, null, sortBy, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> searchAndFilterItems(
+        String query,
+        Long categoryId,
+        String department,
+        String sharingType,
+        String condition,
+        String availability,
+        BigDecimal maxPrice,
+        String city,
+        String neighborhood,
+        String sortBy,
+        int page,
+        int size
+    ) {
         List<ItemDto> all = itemRepository.findByArchivedFalseOrderByCreatedAtDesc()
             .stream()
             .map(dtoMapper::toItemDto)
@@ -94,8 +112,27 @@ public class ItemService {
                     boolean matchTitle = item.title() != null && item.title().toLowerCase().contains(q);
                     boolean matchDesc = item.description() != null && item.description().toLowerCase().contains(q);
                     boolean matchCat = item.categoryName() != null && item.categoryName().toLowerCase().contains(q);
-                    boolean matchLoc = item.campusLocation() != null && item.campusLocation().toLowerCase().contains(q);
+                    boolean matchLoc = (item.campusLocation() != null && item.campusLocation().toLowerCase().contains(q))
+                        || (item.city() != null && item.city().toLowerCase().contains(q))
+                        || (item.neighborhood() != null && item.neighborhood().toLowerCase().contains(q))
+                        || (item.landmark() != null && item.landmark().toLowerCase().contains(q));
                     if (!matchTitle && !matchDesc && !matchCat && !matchLoc) {
+                        return false;
+                    }
+                }
+                if (city != null && !city.isBlank() && !"ALL".equalsIgnoreCase(city)) {
+                    String c = city.trim().toLowerCase();
+                    boolean matchCity = (item.city() != null && item.city().toLowerCase().contains(c))
+                        || (item.campusLocation() != null && item.campusLocation().toLowerCase().contains(c));
+                    if (!matchCity) {
+                        return false;
+                    }
+                }
+                if (neighborhood != null && !neighborhood.isBlank() && !"ALL".equalsIgnoreCase(neighborhood)) {
+                    String n = neighborhood.trim().toLowerCase();
+                    boolean matchNeigh = (item.neighborhood() != null && item.neighborhood().toLowerCase().contains(n))
+                        || (item.campusLocation() != null && item.campusLocation().toLowerCase().contains(n));
+                    if (!matchNeigh) {
                         return false;
                     }
                 }
@@ -248,6 +285,23 @@ public class ItemService {
         itemRepository.save(item);
     }
 
+    public String resolveLocation(ItemUpsertRequest req) {
+        if (req.location() != null && !req.location().isBlank()) {
+            return req.location().trim();
+        }
+        if (req.campusLocation() != null && !req.campusLocation().isBlank()) {
+            return req.campusLocation().trim();
+        }
+        List<String> parts = new ArrayList<>();
+        if (req.city() != null && !req.city().isBlank()) parts.add(req.city().trim());
+        if (req.neighborhood() != null && !req.neighborhood().isBlank()) parts.add(req.neighborhood().trim());
+        if (req.landmark() != null && !req.landmark().isBlank()) parts.add(req.landmark().trim());
+        if (!parts.isEmpty()) {
+            return String.join(", ", parts);
+        }
+        return null;
+    }
+
     private void validateItemRequest(ItemUpsertRequest req) {
         inputValidator.requireNonBlank(req.title(), "Item title is required.");
         inputValidator.requireNonBlank(req.description(), "Item description is required.");
@@ -256,7 +310,8 @@ public class ItemService {
         }
         inputValidator.requireNonBlank(req.itemCondition(), "Item condition is required.");
         inputValidator.requireNonBlank(req.sharingType(), "Sharing type is required.");
-        inputValidator.requireNonBlank(req.campusLocation(), "Campus location is required.");
+        String loc = resolveLocation(req);
+        inputValidator.requireNonBlank(loc, "Pickup location (city, neighborhood, or landmark) is required.");
 
         if (req.rentalPricePerDay() != null && req.rentalPricePerDay().compareTo(BigDecimal.ZERO) < 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Rental price cannot be negative.");
@@ -280,7 +335,27 @@ public class ItemService {
         if (req.availabilityStatus() != null && !req.availabilityStatus().isBlank()) {
             item.setAvailabilityStatus(ListingStatus.valueOf(req.availabilityStatus().toUpperCase()));
         }
-        item.setCampusLocation(inputValidator.sanitizeText(req.campusLocation()));
+        String loc = resolveLocation(req);
+        item.setCampusLocation(inputValidator.sanitizeText(loc));
+
+        String city = req.city() != null && !req.city().isBlank() ? inputValidator.sanitizeText(req.city()) : null;
+        String neighborhood = req.neighborhood() != null && !req.neighborhood().isBlank() ? inputValidator.sanitizeText(req.neighborhood()) : null;
+        String landmark = req.landmark() != null && !req.landmark().isBlank() ? inputValidator.sanitizeText(req.landmark()) : null;
+        String pickupInstructions = req.pickupInstructions() != null && !req.pickupInstructions().isBlank() ? inputValidator.sanitizeText(req.pickupInstructions()) : null;
+
+        if (city == null && loc != null && loc.contains(",")) {
+            String[] segments = loc.split(",");
+            if (segments.length >= 1) city = segments[0].trim();
+            if (segments.length >= 2 && neighborhood == null) neighborhood = segments[1].trim();
+            if (segments.length >= 3 && landmark == null) landmark = segments[2].trim();
+        } else if (city == null && loc != null) {
+            city = loc.trim();
+        }
+
+        item.setCity(city);
+        item.setNeighborhood(neighborhood);
+        item.setLandmark(landmark);
+        item.setPickupInstructions(pickupInstructions);
         item.setSecurityDeposit(req.securityDeposit() != null ? req.securityDeposit() : BigDecimal.ZERO);
         item.setRentalPricePerDay(req.rentalPricePerDay() != null ? req.rentalPricePerDay() : BigDecimal.ZERO);
         if (req.availableFrom() != null && !req.availableFrom().isBlank()) {
