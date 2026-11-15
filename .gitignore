@@ -30,5 +30,6 @@ __pycache__/
 
 # Local Uploaded Media Storage (development runtime)
 backend/uploads/
+backend/data/
 recircle_db.mv.db
 recircle_db.trace.db
